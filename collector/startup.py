@@ -20,6 +20,8 @@ def collect_device_info(reader):
         resp = reader.send_command(cmd)
         if resp:
             value = resp.strip()
+            if value.startswith("> "):
+                value = value[2:]
             models.set_device_info(key, value)
             logger.info("Device %s: %s", key, value)
         else:
