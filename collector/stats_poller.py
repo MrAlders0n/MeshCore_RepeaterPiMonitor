@@ -160,6 +160,7 @@ class StatsPoller:
             rssi=parsed["rssi"],
             score=parsed["score"],
             hash_=parsed["hash"],
+            raw_hex=raw_hex,
         )
 
         # Decode adverts (type=4) for neighbor tracking

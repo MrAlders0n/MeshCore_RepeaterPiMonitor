@@ -94,11 +94,12 @@ def insert_stats_extpower(ts: int, channels: list[dict]):
     _conn().commit()
 
 
-def insert_packet(ts: int, direction, pkt_type, route, snr, rssi, score, hash_):
+def insert_packet(ts: int, direction, pkt_type, route, snr, rssi, score, hash_,
+                   raw_hex: str | None = None):
     _conn().execute(
-        "INSERT INTO packet_log (ts, direction, pkt_type, route, snr, rssi, score, hash) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (ts, direction, pkt_type, route, snr, rssi, score, hash_),
+        "INSERT INTO packet_log (ts, direction, pkt_type, route, snr, rssi, score, hash, raw_hex) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (ts, direction, pkt_type, route, snr, rssi, score, hash_, raw_hex),
     )
     _conn().commit()
 
@@ -175,7 +176,7 @@ def query_stats_extpower(hours: int = 24) -> list[dict]:
 
 def query_packets_recent(limit: int = 50) -> list[dict]:
     rows = _conn().execute(
-        "SELECT id, ts, direction, pkt_type, route, snr, rssi, score, hash "
+        "SELECT id, ts, direction, pkt_type, route, snr, rssi, score, hash, raw_hex "
         "FROM packet_log ORDER BY id DESC LIMIT ?",
         (min(limit, 500),),
     ).fetchall()

@@ -157,6 +157,8 @@
         tbody.innerHTML = '';
         packets.forEach(function (p) {
             var tr = document.createElement('tr');
+            var raw = p.raw_hex || p.hash || '--';
+            var truncated = raw.length > 16 ? raw.substring(0, 16) + '...' : raw;
             tr.innerHTML =
                 '<td>' + formatTime(p.ts) + '</td>' +
                 '<td class="dir-' + (p.direction || '').toLowerCase() + '">' + (p.direction || '--') + '</td>' +
@@ -165,7 +167,16 @@
                 '<td>' + (p.snr != null ? p.snr.toFixed(1) : '--') + '</td>' +
                 '<td>' + (p.rssi != null ? p.rssi.toFixed(0) : '--') + '</td>' +
                 '<td>' + (p.score != null ? p.score.toFixed(2) : '--') + '</td>' +
-                '<td>' + (p.hash || '--') + '</td>';
+                '<td class="pkt-hex" title="Click to copy">' + truncated + '</td>';
+            if (raw !== '--') {
+                tr.querySelector('.pkt-hex').addEventListener('click', function () {
+                    navigator.clipboard.writeText(raw).then(function () {
+                        var cell = tr.querySelector('.pkt-hex');
+                        cell.textContent = 'Copied!';
+                        setTimeout(function () { cell.textContent = truncated; }, 1000);
+                    });
+                });
+            }
             tbody.appendChild(tr);
         });
     }

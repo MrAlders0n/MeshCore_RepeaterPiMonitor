@@ -87,6 +87,7 @@ MIGRATIONS = [
     "ALTER TABLE neighbors ADD COLUMN last_rssi REAL",
     "ALTER TABLE neighbor_sightings ADD COLUMN snr REAL",
     "ALTER TABLE neighbor_sightings ADD COLUMN rssi REAL",
+    "ALTER TABLE packet_log ADD COLUMN raw_hex TEXT",
 ]
 
 

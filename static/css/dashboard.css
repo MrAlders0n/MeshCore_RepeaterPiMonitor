@@ -245,6 +245,14 @@ td.dir-rx { color: var(--green); }
 .snr-ok   { color: var(--yellow); font-weight: 600; }
 .snr-bad  { color: var(--red); font-weight: 600; }
 
+.pkt-hex {
+    font-family: monospace;
+    font-size: 0.8rem;
+    cursor: pointer;
+    opacity: 0.7;
+}
+.pkt-hex:hover { opacity: 1; }
+
 /* Footer */
 footer {
     background: var(--bg-card);
