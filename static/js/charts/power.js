@@ -8,7 +8,12 @@ var PowerCharts = (function () {
 
     function makeOption(yName) {
         return {
-            tooltip: { trigger: 'axis' },
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(30, 30, 50, 0.95)',
+                borderColor: '#555',
+                textStyle: { color: '#e0e0e0' },
+            },
             legend: {
                 data: CH_NAMES,
                 textStyle: { fontSize: 11 },

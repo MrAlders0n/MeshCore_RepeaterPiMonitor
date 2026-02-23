@@ -66,7 +66,13 @@ var AirtimeChart = (function () {
     function init(el, theme) {
         chart = echarts.init(el, theme);
         chart.setOption({
-            tooltip: { trigger: 'axis', valueFormatter: function (v) { return v + '%'; } },
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(30, 30, 50, 0.95)',
+                borderColor: '#555',
+                textStyle: { color: '#e0e0e0' },
+                valueFormatter: function (v) { return v + '%'; },
+            },
             legend: {
                 data: ['TX %', 'RX %'],
                 textStyle: { fontSize: 11 },
