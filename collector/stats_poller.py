@@ -130,10 +130,18 @@ class StatsPoller:
                 direct_dups=data.get("direct_dups"),
             )
 
-        # stats-extpower (may not exist)
+        # stats-extpower
         data = self.reader.send_command_json("stats-extpower")
-        if data and "channels" in data:
-            models.insert_stats_extpower(ts, data["channels"])
+        if data:
+            channels = []
+            for ch_num in range(1, 4):
+                v_mv = data.get(f"ch{ch_num}_voltage_mv")
+                i_ma = data.get(f"ch{ch_num}_current_ma")
+                v = v_mv / 1000.0 if v_mv is not None else None
+                i = i_ma if i_ma is not None else None
+                p = (v_mv * i_ma / 1000.0) if v_mv is not None and i_ma is not None else None
+                channels.append({"voltage": v, "current": i, "power": p})
+            models.insert_stats_extpower(ts, channels)
 
     def _on_packet(self, line: str):
         parsed = parse_packet_line(line)
