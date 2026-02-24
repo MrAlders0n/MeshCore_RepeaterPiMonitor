@@ -567,6 +567,12 @@
         });
     }
 
+    function setupRebootRadio() {
+        document.getElementById('reboot-radio-btn').addEventListener('click', function () {
+            alert('Reboot Radio is not yet implemented. A relay-based hard reboot will be added in a future update.');
+        });
+    }
+
     function refreshServices() {
         fetchJSON('/api/v1/services').then(function (services) {
             services.forEach(function (svc) {
@@ -783,6 +789,7 @@
     setupThemeToggle();
     setupMapFullscreen();
     setupFirmwareFlash();
+    setupRebootRadio();
     setupServices();
     setupTerminal();
 
