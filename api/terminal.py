@@ -26,6 +26,7 @@ def register_terminal_routes(sock):
             stdout=slave_fd,
             stderr=slave_fd,
             preexec_fn=os.setsid,
+            env={"TERM": "xterm-256color", "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"},
         )
         os.close(slave_fd)
 
