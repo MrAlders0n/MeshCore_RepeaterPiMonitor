@@ -18,11 +18,10 @@ def register_terminal_routes(sock):
     @sock.route("/ws/terminal/pty")
     def terminal_pty(ws):
         master_fd, slave_fd = pty.openpty()
-        shell = os.environ.get("SHELL", "/bin/bash")
         stop = threading.Event()
 
         proc = subprocess.Popen(
-            [shell],
+            ["/bin/login"],
             stdin=slave_fd,
             stdout=slave_fd,
             stderr=slave_fd,
