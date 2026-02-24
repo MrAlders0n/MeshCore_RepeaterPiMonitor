@@ -244,12 +244,15 @@ def stats_pi_snapshot():
     swap = psutil.swap_memory()
 
     cpu_temp = None
-    temps = psutil.sensors_temperatures()
-    if temps:
-        for key in ("cpu_thermal", "cpu-thermal", "coretemp"):
-            if key in temps and temps[key]:
-                cpu_temp = temps[key][0].current
-                break
+    try:
+        temps = psutil.sensors_temperatures()
+        if temps:
+            for key in ("cpu_thermal", "cpu-thermal", "coretemp"):
+                if key in temps and temps[key]:
+                    cpu_temp = temps[key][0].current
+                    break
+    except (AttributeError, OSError):
+        pass
 
     disk = psutil.disk_usage("/")
     uptime = int(time.time() - psutil.boot_time())

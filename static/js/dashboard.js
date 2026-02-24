@@ -76,21 +76,21 @@
             PiMemoryChart.update(d);
             PiTempChart.update(d);
             PiDiskChart.update(d);
-        }).catch(noop);
+        }).catch(function (e) { console.warn('Pi health fetch failed:', e); });
 
         fetchJSON('/api/v1/stats/pi/disk-io?hours=' + h).then(function (d) {
             PiDiskIoChart.update(d);
-        }).catch(noop);
+        }).catch(function (e) { console.warn('Pi disk-io fetch failed:', e); });
 
         fetchJSON('/api/v1/stats/pi/network-io?hours=' + h).then(function (d) {
             PiNetworkChart.update(d);
-        }).catch(noop);
+        }).catch(function (e) { console.warn('Pi network-io fetch failed:', e); });
 
         fetchJSON('/api/v1/stats/pi/snapshot').then(function (d) {
             updatePiStatusCards(d);
             updatePiInfoBar(d);
             renderPiProcesses(d.top_processes || []);
-        }).catch(noop);
+        }).catch(function (e) { console.warn('Pi snapshot fetch failed:', e); });
 
         document.getElementById('pi-last-update').textContent = 'Updated: ' + new Date().toLocaleTimeString();
     }
@@ -239,10 +239,6 @@
             NeighborMap.setRepeaterInfo(d);
         }).catch(noop);
 
-        fetchJSON('/api/v1/stats/packets?hours=' + h).then(function (d) {
-            updateMeshCoreStatusCards(d);
-        }).catch(noop);
-
         fetchJSON('/api/v1/stats/power?hours=' + h).then(function (d) {
             PowerCharts.update(d);
         }).catch(noop);
@@ -257,6 +253,7 @@
 
         fetchJSON('/api/v1/packets/activity?hours=' + h + '&bucket_minutes=' + bucketForHours(h)).then(function (d) {
             PacketsChart.update(d);
+            updateMeshCoreStatusCards(d);
         }).catch(noop);
 
         var neighborsReady = fetchJSON('/api/v1/neighbors').then(function (d) {
@@ -277,20 +274,19 @@
 
     function updateMeshCoreStatusCards(d) {
         if (!d.timestamps || !d.timestamps.length) return;
-        var last = d.timestamps.length - 1;
-        var sent = d.sent_total[last] || 0;
-        var recv = d.recv_total[last] || 0;
-        var fwd = d.fwd_total[last] || 0;
-        var fwdErr = d.fwd_errors[last] || 0;
-        var rxErr = d.recv_errors[last] || 0;
-        var dups = d.direct_dups[last] || 0;
-
-        document.getElementById('mc-tx-val').textContent = sent.toLocaleString();
-        document.getElementById('mc-rx-val').textContent = recv.toLocaleString();
-        document.getElementById('mc-fwd-val').textContent = fwd.toLocaleString();
-        document.getElementById('mc-fwd-sub').textContent = fwdErr + ' errors';
-        document.getElementById('mc-err-val').textContent = rxErr.toLocaleString();
-        document.getElementById('mc-err-sub').textContent = dups + ' duplicates';
+        var txDirect = 0, txFlood = 0, rxDirect = 0, rxFlood = 0, rxErrors = 0;
+        for (var i = 0; i < d.timestamps.length; i++) {
+            txDirect += d.tx_direct[i] || 0;
+            txFlood += d.tx_flood[i] || 0;
+            rxDirect += d.rx_direct[i] || 0;
+            rxFlood += d.rx_flood[i] || 0;
+            rxErrors += d.rx_errors[i] || 0;
+        }
+        document.getElementById('mc-tx-val').textContent = (txDirect + txFlood).toLocaleString();
+        document.getElementById('mc-tx-sub').textContent = txDirect + ' direct / ' + txFlood + ' flood';
+        document.getElementById('mc-rx-val').textContent = (rxDirect + rxFlood).toLocaleString();
+        document.getElementById('mc-rx-sub').textContent = rxDirect + ' direct / ' + rxFlood + ' flood';
+        document.getElementById('mc-err-val').textContent = rxErrors.toLocaleString();
     }
 
     function refreshAll() {

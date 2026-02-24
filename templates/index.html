@@ -12,7 +12,6 @@
     <!-- Header -->
     <header id="header">
         <div class="header-info">
-            <span class="status-dot" id="status-dot" title="Collector status"></span>
             <h1>MeshCore Repeater Monitor</h1>
         </div>
         {% if auth_enabled %}
@@ -31,6 +30,7 @@
     <div id="tab-meshcore" class="tab-panel active">
         <!-- Device Info Bar -->
         <div class="info-bar">
+            <span class="status-dot" id="status-dot" title="Collector status"></span>
             <span class="info-bar-item"><strong id="mc-radio-name">--</strong></span>
             <span class="info-bar-sep"></span>
             <span class="info-bar-item" id="mc-firmware">--</span>
@@ -59,22 +59,17 @@
             <div class="status-card">
                 <span class="status-label">TX Packets</span>
                 <span class="status-value" id="mc-tx-val">--</span>
-                <span class="status-sub" id="mc-tx-sub">Direct / Flood</span>
+                <span class="status-sub" id="mc-tx-sub">direct / flood</span>
             </div>
             <div class="status-card">
                 <span class="status-label">RX Packets</span>
                 <span class="status-value" id="mc-rx-val">--</span>
-                <span class="status-sub" id="mc-rx-sub">Direct / Flood</span>
-            </div>
-            <div class="status-card">
-                <span class="status-label">Forwarded</span>
-                <span class="status-value" id="mc-fwd-val">--</span>
-                <span class="status-sub" id="mc-fwd-sub">--</span>
+                <span class="status-sub" id="mc-rx-sub">direct / flood</span>
             </div>
             <div class="status-card">
                 <span class="status-label">Errors</span>
                 <span class="status-value" id="mc-err-val">--</span>
-                <span class="status-sub" id="mc-err-sub">--</span>
+                <span class="status-sub" id="mc-err-sub">RX errors</span>
             </div>
         </div>
 

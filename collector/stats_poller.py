@@ -62,19 +62,22 @@ class StatsPoller:
             collect_device_info(self.reader)
 
         while not self._stop_event.is_set():
+            ts = models.aligned_ts()
+
+            # Pi health — always collect (no serial needed)
+            self._poll_pi_health(ts)
+
             if not self.reader.connected:
                 self._connect_with_retry()
-                if not self.reader.connected:
-                    self._stop_event.wait(30)
-                    continue
 
-            try:
-                self._poll_all()
-                self._last_poll = time.time()
-                self._poll_count += 1
-            except Exception:
-                logger.exception("Error during poll cycle")
-                self._error_count += 1
+            if self.reader.connected:
+                try:
+                    self._poll_serial(ts)
+                    self._last_poll = time.time()
+                    self._poll_count += 1
+                except Exception:
+                    logger.exception("Error during poll cycle")
+                    self._error_count += 1
 
             # Purge old data once per cycle
             try:
@@ -102,9 +105,7 @@ class StatsPoller:
             self._stop_event.wait(min(remaining, 5))
             self.reader.read_background_lines()
 
-    def _poll_all(self):
-        ts = models.aligned_ts()
-
+    def _poll_serial(self, ts: int):
         # stats-core
         data = self.reader.send_command_json("stats-core")
         if data:
@@ -152,9 +153,6 @@ class StatsPoller:
                 p = (v_mv * i_ma / 1000.0) if v_mv is not None and i_ma is not None else None
                 channels.append({"voltage": v, "current": i, "power": p})
             models.insert_stats_extpower(ts, channels)
-
-        # Pi health (local — no serial needed)
-        self._poll_pi_health(ts)
 
     def _poll_pi_health(self, ts: int):
         if not HAS_PSUTIL:
