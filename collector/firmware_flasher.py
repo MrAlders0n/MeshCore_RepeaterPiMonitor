@@ -81,8 +81,8 @@ def _flash_worker(fw_path: str, expected_hash: str, poller) -> None:
         _append_log(f"Warning stopping collector: {e}")
 
     # Stop external services
-    _set_state("flashing", "Stopping serial-mux and mctomqtt...")
-    for svc in ("serial-mux", "mctomqtt"):
+    _set_state("flashing", "Stopping SerialMux and mctomqtt...")
+    for svc in ("SerialMux", "mctomqtt"):
         _append_log(f"Stopping {svc}...")
         try:
             result = subprocess.run(
@@ -141,7 +141,7 @@ def _flash_worker(fw_path: str, expected_hash: str, poller) -> None:
 
     # Restart services regardless of outcome
     _append_log("Restarting services...")
-    for svc in ("serial-mux", "mctomqtt"):
+    for svc in ("SerialMux", "mctomqtt"):
         _append_log(f"Starting {svc}...")
         try:
             result = subprocess.run(
