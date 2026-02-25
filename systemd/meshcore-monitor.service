@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/meshcore-monitor
-ExecStart=/opt/meshcore-monitor/venv/bin/python app.py
+WorkingDirectory=/opt/RepeaterWatch
+ExecStart=/opt/RepeaterWatch/venv/bin/python app.py
 Restart=always
 RestartSec=10
 # Configuration is loaded from .env file in WorkingDirectory (see .env.example)
