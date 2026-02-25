@@ -47,6 +47,26 @@ def get_device_info() -> dict:
     return {r["key"]: r["value"] for r in rows}
 
 
+# ── Settings ────────────────────────────────────────────────
+
+def get_setting(key: str, default: str | None = None) -> str | None:
+    row = _conn().execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+    return row[0] if row else default
+
+
+def set_setting(key: str, value: str):
+    _conn().execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+        (key, value),
+    )
+    _conn().commit()
+
+
+def get_all_settings() -> dict:
+    rows = _conn().execute("SELECT key, value FROM settings").fetchall()
+    return {r[0]: r[1] for r in rows}
+
+
 # ── Stats inserts ────────────────────────────────────────────
 
 def insert_stats_core(ts: int, battery_mv, uptime_secs, errors, queue_len):

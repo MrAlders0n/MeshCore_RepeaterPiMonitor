@@ -6,6 +6,10 @@ var PowerCharts = (function () {
     var CH_COLORS = ['#ffd166', '#00b4d8'];
     var CH_NAMES = ['Solar', 'Repeater'];
 
+    // Channel mapping: which DB channel (ch0/ch1/ch2) maps to Solar and Repeater
+    var solarCh = 'ch1';
+    var repeaterCh = 'ch0';
+
     var TT = { trigger: 'axis', backgroundColor: 'rgba(30,30,50,0.95)', borderColor: '#555', textStyle: { color: '#e0e0e0' } };
     var AX = { axisLine: { lineStyle: { color: '#888' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } } };
 
@@ -48,23 +52,27 @@ var PowerCharts = (function () {
         powerChart.setOption(makeOption('mW'));
     }
 
+    function setChannelMapping(solar, repeater) {
+        solarCh = solar;
+        repeaterCh = repeater;
+    }
+
     function update(data) {
         if (!voltageChart) return;
         if (!data.timestamps.length) return;
 
-        // Solar = ch1 (device channel 2), Repeater = ch2 (device channel 3)
         var voltageSeries = [[], []];
         var currentSeries = [[], []];
         var powerSeries = [[], []];
 
         for (var i = 0; i < data.timestamps.length; i++) {
             var t = data.timestamps[i] * 1000;
-            voltageSeries[0].push([t, data.ch2_voltage[i]]);
-            voltageSeries[1].push([t, data.ch1_voltage[i]]);
-            currentSeries[0].push([t, data.ch2_current[i]]);
-            currentSeries[1].push([t, data.ch1_current[i]]);
-            powerSeries[0].push([t, data.ch2_power[i]]);
-            powerSeries[1].push([t, data.ch1_power[i]]);
+            voltageSeries[0].push([t, data[solarCh + '_voltage'][i]]);
+            voltageSeries[1].push([t, data[repeaterCh + '_voltage'][i]]);
+            currentSeries[0].push([t, data[solarCh + '_current'][i]]);
+            currentSeries[1].push([t, data[repeaterCh + '_current'][i]]);
+            powerSeries[0].push([t, data[solarCh + '_power'][i]]);
+            powerSeries[1].push([t, data[repeaterCh + '_power'][i]]);
         }
 
         voltageChart.setOption({
@@ -82,6 +90,60 @@ var PowerCharts = (function () {
         if (voltageChart) voltageChart.resize();
         if (currentChart) currentChart.resize();
         if (powerChart) powerChart.resize();
+    }
+
+    return { init: init, update: update, resize: resize, setChannelMapping: setChannelMapping };
+})();
+
+
+var BatteryChart = (function () {
+    var chart = null;
+
+    var TT = { trigger: 'axis', backgroundColor: 'rgba(30,30,50,0.95)', borderColor: '#555', textStyle: { color: '#e0e0e0' } };
+    var AX = { axisLine: { lineStyle: { color: '#888' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } } };
+
+    function init(el) {
+        if (!el) return;
+        chart = echarts.init(el);
+        chart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: TT,
+            xAxis: { type: 'time', axisLine: AX.axisLine },
+            yAxis: { type: 'value', name: 'mV', nameTextStyle: { color: '#888' }, axisLine: AX.axisLine, splitLine: AX.splitLine },
+            dataZoom: [
+                { type: 'inside', xAxisIndex: 0 },
+                { type: 'slider', xAxisIndex: 0, height: 20, bottom: 5 },
+            ],
+            series: [{
+                name: 'Battery',
+                type: 'line',
+                smooth: true,
+                symbol: 'none',
+                lineStyle: { width: 2, color: '#06d6a0' },
+                itemStyle: { color: '#06d6a0' },
+                areaStyle: { color: 'rgba(6, 214, 160, 0.1)' },
+                data: [],
+            }],
+            grid: { left: 50, right: 16, top: 30, bottom: 50 },
+        });
+    }
+
+    function update(data) {
+        if (!chart) return;
+        if (!data.timestamps || !data.timestamps.length) return;
+
+        var seriesData = [];
+        for (var i = 0; i < data.timestamps.length; i++) {
+            seriesData.push([data.timestamps[i] * 1000, data.battery_mv[i]]);
+        }
+
+        chart.setOption({
+            series: [{ data: seriesData }],
+        });
+    }
+
+    function resize() {
+        if (chart) chart.resize();
     }
 
     return { init: init, update: update, resize: resize };

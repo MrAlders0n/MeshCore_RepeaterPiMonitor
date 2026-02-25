@@ -24,6 +24,7 @@
         <button class="tab-btn active" data-tab="meshcore">MeshCore</button>
         <button class="tab-btn" data-tab="raspberry-pi">Raspberry Pi</button>
         <button class="tab-btn" data-tab="tools">Tools</button>
+        <button class="tab-btn" data-tab="settings">Settings</button>
     </nav>
 
     <!-- Tab: MeshCore -->
@@ -75,17 +76,21 @@
 
         <!-- Charts Grid -->
         <div class="charts-grid">
-            <div class="chart-card">
+            <div class="chart-card power-ina-chart">
                 <h3>Solar / Repeater Voltage</h3>
                 <div id="chart-voltage" class="chart-container"></div>
             </div>
-            <div class="chart-card">
+            <div class="chart-card power-ina-chart">
                 <h3>Solar / Repeater Current</h3>
                 <div id="chart-current" class="chart-container"></div>
             </div>
-            <div class="chart-card">
+            <div class="chart-card power-ina-chart">
                 <h3>Solar / Repeater Power</h3>
                 <div id="chart-power" class="chart-container"></div>
+            </div>
+            <div class="chart-card power-onboard-chart" style="display:none;">
+                <h3>Battery Voltage</h3>
+                <div id="chart-battery" class="chart-container"></div>
             </div>
             <div class="chart-card">
                 <h3>RF Signal</h3>
@@ -347,6 +352,46 @@
                     <div id="xterm-terminal"></div>
                 </div>
                 <div id="terminal-status" class="terminal-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Settings -->
+    <div id="tab-settings" class="tab-panel">
+        <div class="settings-grid">
+            <div class="tool-card settings-card">
+                <div class="tool-card-header">
+                    <span class="tool-icon">&#x2699;</span>
+                    <h3>Power Monitoring</h3>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Source</label>
+                    <div class="radio-group">
+                        <button class="terminal-mode-btn active" data-setting="power_source" data-value="ina3221">INA3221</button>
+                        <button class="terminal-mode-btn" data-setting="power_source" data-value="onboard">Onboard</button>
+                    </div>
+                </div>
+                <div class="settings-group" id="ina-channel-settings">
+                    <label class="settings-label">INA3221 Channel Mapping</label>
+                    <div class="settings-row">
+                        <label for="ina-solar-ch">Solar channel</label>
+                        <select id="ina-solar-ch" class="settings-select">
+                            <option value="ch0">ch1 (device)</option>
+                            <option value="ch1" selected>ch2 (device)</option>
+                            <option value="ch2">ch3 (device)</option>
+                        </select>
+                    </div>
+                    <div class="settings-row">
+                        <label for="ina-repeater-ch">Repeater channel</label>
+                        <select id="ina-repeater-ch" class="settings-select">
+                            <option value="ch0" selected>ch1 (device)</option>
+                            <option value="ch1">ch2 (device)</option>
+                            <option value="ch2">ch3 (device)</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="settings-save-btn" class="save-btn">Save</button>
+                <span id="settings-save-status" class="settings-save-status"></span>
             </div>
         </div>
     </div>

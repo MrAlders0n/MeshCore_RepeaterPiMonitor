@@ -10,6 +10,13 @@
 
     var piChartsInitialized = false;
     var piCurrentHours = 6;
+    var batteryChartInitialized = false;
+
+    var appSettings = {
+        power_source: 'ina3221',
+        ina_solar_channel: 'ch1',
+        ina_repeater_channel: 'ch0',
+    };
 
     // ── Theme ────────────────────────────────────────────
 
@@ -39,12 +46,19 @@
         chartsInitialized = true;
     }
 
+    function initBatteryChart() {
+        if (batteryChartInitialized) return;
+        BatteryChart.init(document.getElementById('chart-battery'));
+        batteryChartInitialized = true;
+    }
+
     function resizeCharts() {
         RadioChart.resize();
         PowerCharts.resize();
         AirtimeChart.resize();
         PacketsChart.resize();
         NeighborMap.invalidateSize();
+        BatteryChart.resize();
     }
 
     // ── Pi Charts ───────────────────────────────────────
@@ -203,6 +217,8 @@
             stopServicesRefresh();
         } else if (tabId === 'tools') {
             startServicesRefresh();
+        } else if (tabId === 'settings') {
+            stopServicesRefresh();
         }
     }
 
@@ -243,9 +259,15 @@
             NeighborMap.setRepeaterInfo(d);
         }).catch(noop);
 
-        fetchJSON('/api/v1/stats/power?hours=' + h).then(function (d) {
-            PowerCharts.update(d);
-        }).catch(noop);
+        if (appSettings.power_source === 'ina3221') {
+            fetchJSON('/api/v1/stats/power?hours=' + h).then(function (d) {
+                PowerCharts.update(d);
+            }).catch(noop);
+        } else {
+            fetchJSON('/api/v1/stats/battery?hours=' + h).then(function (d) {
+                BatteryChart.update(d);
+            }).catch(noop);
+        }
 
         fetchJSON('/api/v1/stats/radio?hours=' + h).then(function (d) {
             RadioChart.update(d);
@@ -446,15 +468,21 @@
             applyTheme(next);
             if (activeTab === 'meshcore') {
                 initCharts();
+                batteryChartInitialized = false;
+                if (appSettings.power_source === 'onboard') {
+                    initBatteryChart();
+                }
                 refreshMeshCore();
                 piChartsInitialized = false;
             } else if (activeTab === 'raspberry-pi') {
                 initPiCharts();
                 refreshPiHealth();
                 chartsInitialized = false;
+                batteryChartInitialized = false;
             } else {
                 chartsInitialized = false;
                 piChartsInitialized = false;
+                batteryChartInitialized = false;
             }
         });
     }
@@ -760,6 +788,117 @@
         }
     }
 
+    // ── Settings ─────────────────────────────────────────
+
+    function applyPowerSettings(settings) {
+        var inaCharts = document.querySelectorAll('.power-ina-chart');
+        var onboardCharts = document.querySelectorAll('.power-onboard-chart');
+
+        if (settings.power_source === 'ina3221') {
+            inaCharts.forEach(function (el) { el.style.display = ''; });
+            onboardCharts.forEach(function (el) { el.style.display = 'none'; });
+            PowerCharts.setChannelMapping(settings.ina_solar_channel, settings.ina_repeater_channel);
+        } else {
+            inaCharts.forEach(function (el) { el.style.display = 'none'; });
+            onboardCharts.forEach(function (el) { el.style.display = ''; });
+            initBatteryChart();
+        }
+    }
+
+    function setupSettings() {
+        var sourceBtns = document.querySelectorAll('[data-setting="power_source"]');
+        var channelSection = document.getElementById('ina-channel-settings');
+        var solarSelect = document.getElementById('ina-solar-ch');
+        var repeaterSelect = document.getElementById('ina-repeater-ch');
+        var saveBtn = document.getElementById('settings-save-btn');
+        var statusEl = document.getElementById('settings-save-status');
+
+        // Toggle radio buttons
+        sourceBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                sourceBtns.forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var val = btn.getAttribute('data-value');
+                channelSection.style.display = val === 'ina3221' ? '' : 'none';
+            });
+        });
+
+        // Save handler
+        saveBtn.addEventListener('click', function () {
+            var powerSource = 'ina3221';
+            sourceBtns.forEach(function (btn) {
+                if (btn.classList.contains('active')) {
+                    powerSource = btn.getAttribute('data-value');
+                }
+            });
+
+            var body = {
+                power_source: powerSource,
+                ina_solar_channel: solarSelect.value,
+                ina_repeater_channel: repeaterSelect.value,
+            };
+
+            saveBtn.disabled = true;
+            statusEl.textContent = 'Saving...';
+            statusEl.className = 'settings-save-status';
+
+            fetch('/api/v1/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+            .then(function (resp) {
+                saveBtn.disabled = false;
+                if (resp.ok) {
+                    appSettings = body;
+                    applyPowerSettings(appSettings);
+                    statusEl.textContent = 'Saved';
+                    statusEl.className = 'settings-save-status success';
+                    // Refresh charts with new settings
+                    if (chartsInitialized) {
+                        refreshMeshCore();
+                    }
+                } else {
+                    statusEl.textContent = resp.data.error || 'Save failed';
+                    statusEl.className = 'settings-save-status error';
+                }
+                setTimeout(function () { statusEl.textContent = ''; }, 3000);
+            })
+            .catch(function (err) {
+                saveBtn.disabled = false;
+                statusEl.textContent = 'Network error';
+                statusEl.className = 'settings-save-status error';
+                setTimeout(function () { statusEl.textContent = ''; }, 3000);
+            });
+        });
+    }
+
+    function populateSettingsForm(settings) {
+        var sourceBtns = document.querySelectorAll('[data-setting="power_source"]');
+        var channelSection = document.getElementById('ina-channel-settings');
+        var solarSelect = document.getElementById('ina-solar-ch');
+        var repeaterSelect = document.getElementById('ina-repeater-ch');
+
+        sourceBtns.forEach(function (btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-value') === settings.power_source);
+        });
+        channelSection.style.display = settings.power_source === 'ina3221' ? '' : 'none';
+        solarSelect.value = settings.ina_solar_channel;
+        repeaterSelect.value = settings.ina_repeater_channel;
+    }
+
+    function loadSettings() {
+        return fetchJSON('/api/v1/settings').then(function (settings) {
+            appSettings = settings;
+            populateSettingsForm(settings);
+            applyPowerSettings(settings);
+        }).catch(function () {
+            // Use defaults on error
+            applyPowerSettings(appSettings);
+        });
+    }
+
     // ── Resize ───────────────────────────────────────────
 
     var resizeTimeout;
@@ -783,7 +922,6 @@
     applyTheme(getTheme());
     setupTabs();
     initCharts();
-    refreshAll();
     setupTimeButtons();
     setupPiTimeButtons();
     setupThemeToggle();
@@ -792,6 +930,12 @@
     setupRebootRadio();
     setupServices();
     setupTerminal();
+    setupSettings();
+
+    // Load settings first, then do initial refresh
+    loadSettings().then(function () {
+        refreshAll();
+    });
 
     refreshTimer = setInterval(refreshAll, REFRESH_INTERVAL);
 })();

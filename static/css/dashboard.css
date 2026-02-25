@@ -824,6 +824,111 @@ footer strong {
     color: var(--red);
 }
 
+/* Settings Tab */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.settings-card .settings-group {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 14px;
+}
+
+.settings-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.settings-row:last-child {
+    margin-bottom: 0;
+}
+
+.settings-row label {
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.settings-select {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    min-width: 140px;
+    cursor: pointer;
+}
+
+.settings-select option {
+    background: var(--bg-card);
+    color: var(--text);
+}
+
+.settings-select:hover {
+    border-color: var(--accent);
+}
+
+.settings-card .radio-group {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    width: fit-content;
+}
+
+.save-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: background 0.15s;
+}
+
+.save-btn:hover:not(:disabled) {
+    filter: brightness(0.85);
+}
+
+.save-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.settings-save-status {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 12px;
+}
+
+.settings-save-status.success {
+    color: var(--green);
+}
+
+.settings-save-status.error {
+    color: var(--red);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .charts-grid {
@@ -857,7 +962,8 @@ footer strong {
         font-size: 0.78rem;
     }
 
-    .tools-grid {
+    .tools-grid,
+    .settings-grid {
         grid-template-columns: 1fr;
         padding: 12px;
     }

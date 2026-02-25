@@ -308,6 +308,44 @@ def stats_pi_snapshot():
     })
 
 
+# ── Settings ──────────────────────────────────────────────
+
+SETTINGS_DEFAULTS = {
+    "power_source": "ina3221",
+    "ina_solar_channel": "ch1",
+    "ina_repeater_channel": "ch0",
+}
+
+SETTINGS_ALLOWED = {
+    "power_source": ["onboard", "ina3221"],
+    "ina_solar_channel": ["ch0", "ch1", "ch2"],
+    "ina_repeater_channel": ["ch0", "ch1", "ch2"],
+}
+
+
+@api.route("/settings")
+def get_settings():
+    stored = models.get_all_settings()
+    result = {}
+    for key, default in SETTINGS_DEFAULTS.items():
+        result[key] = stored.get(key, default)
+    return jsonify(result)
+
+
+@api.route("/settings", methods=["PUT"])
+def put_settings():
+    data = request.get_json(force=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Expected JSON object"}), 400
+    for key, value in data.items():
+        if key not in SETTINGS_ALLOWED:
+            return jsonify({"error": f"Unknown setting: {key}"}), 400
+        if value not in SETTINGS_ALLOWED[key]:
+            return jsonify({"error": f"Invalid value for {key}: {value}"}), 400
+        models.set_setting(key, value)
+    return jsonify({"status": "ok"})
+
+
 @api.route("/firmware/flash", methods=["POST"])
 def firmware_flash():
     # Check if a flash is already in progress

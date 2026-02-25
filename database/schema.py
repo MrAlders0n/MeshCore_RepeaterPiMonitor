@@ -98,6 +98,11 @@ CREATE TABLE IF NOT EXISTS neighbor_sightings (
     PRIMARY KEY (ts, pubkey_prefix)
 );
 
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_packet_log_ts ON packet_log(ts);
 CREATE INDEX IF NOT EXISTS idx_neighbor_sightings_ts ON neighbor_sightings(ts);
 """

@@ -143,7 +143,9 @@ class StatsPoller:
                 flood_dups=data.get("flood_dups"),
             )
 
-        # stats-extpower
+        # stats-extpower (only when using INA3221 power source)
+        if models.get_setting("power_source", "ina3221") != "ina3221":
+            return
         data = self.reader.send_command_json("stats-extpower")
         if data:
             channels = []
