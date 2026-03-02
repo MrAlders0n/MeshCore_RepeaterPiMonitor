@@ -411,7 +411,21 @@
                 <button id="settings-save-btn" class="save-btn">Save</button>
                 <span id="settings-save-status" class="settings-save-status"></span>
             </div>
-        </div>
+
+            <div class="tool-card settings-card">
+                <div class="tool-card-header">
+                    <span class="tool-icon">&#x2699;</span>
+                    <h3>Firmware</h3>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label" for="flash-serial-port">Flash Serial Port</label>
+                    <input type="text" id="flash-serial-port" class="settings-input" spellcheck="false"
+                           placeholder="/dev/serial/by-id/..." />
+                </div>
+                <button id="fw-settings-save-btn" class="save-btn">Save</button>
+                <span id="fw-settings-save-status" class="settings-save-status"></span>
+            </div>
+        </div><!-- .settings-grid -->
     </div>
 
     <!-- Footer -->

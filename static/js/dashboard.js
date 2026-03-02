@@ -16,6 +16,7 @@
         power_source: 'ina3221',
         ina_solar_channel: 'ch1',
         ina_repeater_channel: 'ch0',
+        flash_serial_port: '',
     };
 
     // ── Theme ────────────────────────────────────────────
@@ -930,6 +931,44 @@
                 setTimeout(function () { statusEl.textContent = ''; }, 3000);
             });
         });
+
+        // Firmware settings save handler
+        var fwSaveBtn = document.getElementById('fw-settings-save-btn');
+        var fwStatusEl = document.getElementById('fw-settings-save-status');
+        var flashPortInput = document.getElementById('flash-serial-port');
+
+        fwSaveBtn.addEventListener('click', function () {
+            var body = { flash_serial_port: flashPortInput.value.trim() };
+
+            fwSaveBtn.disabled = true;
+            fwStatusEl.textContent = 'Saving...';
+            fwStatusEl.className = 'settings-save-status';
+
+            fetch('/api/v1/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+            .then(function (resp) {
+                fwSaveBtn.disabled = false;
+                if (resp.ok) {
+                    appSettings.flash_serial_port = body.flash_serial_port;
+                    fwStatusEl.textContent = 'Saved';
+                    fwStatusEl.className = 'settings-save-status success';
+                } else {
+                    fwStatusEl.textContent = resp.data.error || 'Save failed';
+                    fwStatusEl.className = 'settings-save-status error';
+                }
+                setTimeout(function () { fwStatusEl.textContent = ''; }, 3000);
+            })
+            .catch(function () {
+                fwSaveBtn.disabled = false;
+                fwStatusEl.textContent = 'Network error';
+                fwStatusEl.className = 'settings-save-status error';
+                setTimeout(function () { fwStatusEl.textContent = ''; }, 3000);
+            });
+        });
     }
 
     function populateSettingsForm(settings) {
@@ -944,6 +983,11 @@
         channelSection.style.display = settings.power_source === 'ina3221' ? '' : 'none';
         solarSelect.value = settings.ina_solar_channel;
         repeaterSelect.value = settings.ina_repeater_channel;
+
+        var flashPortInput = document.getElementById('flash-serial-port');
+        if (flashPortInput) {
+            flashPortInput.value = settings.flash_serial_port || '';
+        }
     }
 
     function loadSettings() {

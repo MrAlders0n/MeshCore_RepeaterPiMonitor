@@ -11,6 +11,7 @@ import time
 
 import config
 from collector import radio_gpio
+from database import models
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ def _flash_worker(fw_path: str, expected_hash: str, poller) -> None:
         return
 
     # Wait for the DFU serial port to re-appear after USB re-enumeration
-    port = config.FLASH_SERIAL_PORT
+    port = models.get_setting("flash_serial_port", config.FLASH_SERIAL_PORT)
     _set_state("flashing", "Waiting for DFU port...")
     _append_log(f"Waiting for {port} to appear...")
     dfu_port = _wait_for_port(port, timeout=15)

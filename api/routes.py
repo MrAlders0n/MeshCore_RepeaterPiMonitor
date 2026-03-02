@@ -331,6 +331,7 @@ SETTINGS_DEFAULTS = {
     "power_source": "ina3221",
     "ina_solar_channel": "ch1",
     "ina_repeater_channel": "ch0",
+    "flash_serial_port": config.FLASH_SERIAL_PORT,
 }
 
 SETTINGS_ALLOWED = {
@@ -338,6 +339,8 @@ SETTINGS_ALLOWED = {
     "ina_solar_channel": ["ch0", "ch1", "ch2"],
     "ina_repeater_channel": ["ch0", "ch1", "ch2"],
 }
+
+SETTINGS_FREETEXT = {"flash_serial_port"}
 
 
 @api.route("/settings")
@@ -355,10 +358,14 @@ def put_settings():
     if not isinstance(data, dict):
         return jsonify({"error": "Expected JSON object"}), 400
     for key, value in data.items():
-        if key not in SETTINGS_ALLOWED:
+        if key in SETTINGS_FREETEXT:
+            if not isinstance(value, str) or not value.strip():
+                return jsonify({"error": f"Invalid value for {key}: must be non-empty string"}), 400
+        elif key in SETTINGS_ALLOWED:
+            if value not in SETTINGS_ALLOWED[key]:
+                return jsonify({"error": f"Invalid value for {key}: {value}"}), 400
+        else:
             return jsonify({"error": f"Unknown setting: {key}"}), 400
-        if value not in SETTINGS_ALLOWED[key]:
-            return jsonify({"error": f"Invalid value for {key}: {value}"}), 400
         models.set_setting(key, value)
     return jsonify({"status": "ok"})
 

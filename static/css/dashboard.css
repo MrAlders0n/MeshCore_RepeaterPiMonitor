@@ -1006,6 +1006,26 @@ footer strong {
     border-color: var(--accent);
 }
 
+.settings-input {
+    width: 100%;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    box-sizing: border-box;
+}
+
+.settings-input::placeholder {
+    color: var(--text-muted);
+}
+
+.settings-input:hover {
+    border-color: var(--accent);
+}
+
 .settings-card .radio-group {
     display: flex;
     border: 1px solid var(--border);
