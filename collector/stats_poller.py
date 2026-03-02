@@ -137,13 +137,17 @@ class StatsPoller:
         if data:
             models.insert_stats_packets(
                 ts,
-                recv_total=data.get("recv_total"),
-                sent_total=data.get("sent_total"),
+                recv_total=data.get("recv") or data.get("recv_total"),
+                sent_total=data.get("sent") or data.get("sent_total"),
                 recv_errors=data.get("recv_errors"),
                 fwd_total=data.get("fwd_total"),
                 fwd_errors=data.get("fwd_errors"),
                 direct_dups=data.get("direct_dups"),
                 flood_dups=data.get("flood_dups"),
+                direct_tx=data.get("direct_tx"),
+                flood_tx=data.get("flood_tx"),
+                direct_rx=data.get("direct_rx"),
+                flood_rx=data.get("flood_rx"),
             )
 
         # stats-extpower (only when using INA3221 power source)

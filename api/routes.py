@@ -126,6 +126,22 @@ def packets_activity():
     h = _hours()
     bucket = request.args.get("bucket_minutes", 15, type=int)
     rows = models.query_packets_activity(h, bucket)
+
+    # If packet_log has no data, fall back to stats_packets deltas
+    if not rows:
+        rows = models.query_packets_activity_from_stats(h)
+        return jsonify({
+            "timestamps": [r["bucket"] for r in rows],
+            "tx_direct": [r["tx_direct"] for r in rows],
+            "tx_flood": [r["tx_flood"] for r in rows],
+            "rx_direct": [r["rx_direct"] for r in rows],
+            "rx_flood": [r["rx_flood"] for r in rows],
+            "dups_direct": [0] * len(rows),
+            "dups_flood": [0] * len(rows),
+            "rx_errors": [r["rx_errors"] for r in rows],
+            "total": [r["total"] for r in rows],
+        })
+
     dups = models.query_packet_dups(h)
     dup_by_ts = {}
     for d in dups:

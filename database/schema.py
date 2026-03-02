@@ -119,6 +119,10 @@ MIGRATIONS = [
     "ALTER TABLE stats_packets ADD COLUMN flood_dups INTEGER",
     "ALTER TABLE stats_radio ADD COLUMN last_rssi REAL",
     "ALTER TABLE stats_radio ADD COLUMN last_snr REAL",
+    "ALTER TABLE stats_packets ADD COLUMN direct_tx INTEGER",
+    "ALTER TABLE stats_packets ADD COLUMN flood_tx INTEGER",
+    "ALTER TABLE stats_packets ADD COLUMN direct_rx INTEGER",
+    "ALTER TABLE stats_packets ADD COLUMN flood_rx INTEGER",
 ]
 
 

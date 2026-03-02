@@ -89,12 +89,16 @@ def insert_stats_radio(ts: int, noise_floor, tx_air_secs, rx_air_secs,
 
 
 def insert_stats_packets(ts: int, recv_total, sent_total, recv_errors,
-                         fwd_total, fwd_errors, direct_dups, flood_dups=None):
+                         fwd_total, fwd_errors, direct_dups, flood_dups=None,
+                         direct_tx=None, flood_tx=None,
+                         direct_rx=None, flood_rx=None):
     _conn().execute(
         "INSERT OR REPLACE INTO stats_packets "
-        "(ts, recv_total, sent_total, recv_errors, fwd_total, fwd_errors, direct_dups, flood_dups) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (ts, recv_total, sent_total, recv_errors, fwd_total, fwd_errors, direct_dups, flood_dups),
+        "(ts, recv_total, sent_total, recv_errors, fwd_total, fwd_errors, "
+        "direct_dups, flood_dups, direct_tx, flood_tx, direct_rx, flood_rx) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (ts, recv_total, sent_total, recv_errors, fwd_total, fwd_errors,
+         direct_dups, flood_dups, direct_tx, flood_tx, direct_rx, flood_rx),
     )
     _conn().commit()
 
@@ -177,7 +181,8 @@ def query_stats_radio(hours: int = 24) -> list[dict]:
 
 def query_stats_packets(hours: int = 24) -> list[dict]:
     rows = _conn().execute(
-        "SELECT ts, recv_total, sent_total, recv_errors, fwd_total, fwd_errors, direct_dups "
+        "SELECT ts, recv_total, sent_total, recv_errors, fwd_total, fwd_errors, "
+        "direct_dups, flood_dups, direct_tx, flood_tx, direct_rx, flood_rx "
         "FROM stats_packets WHERE ts >= ? ORDER BY ts",
         (_since(hours),),
     ).fetchall()
@@ -199,6 +204,36 @@ def query_packet_dups(hours: int = 24) -> list[dict]:
             fd = max(0, (row["flood_dups"] or 0) - (prev["flood_dups"] or 0))
             re = max(0, (row["recv_errors"] or 0) - (prev["recv_errors"] or 0))
             result.append({"ts": row["ts"], "dups_direct": dd, "dups_flood": fd, "rx_errors": re})
+        prev = row
+    return result
+
+
+def query_packets_activity_from_stats(hours: int = 24) -> list[dict]:
+    """Derive per-interval packet counts from cumulative stats_packets counters."""
+    rows = _conn().execute(
+        "SELECT ts, direct_tx, flood_tx, direct_rx, flood_rx, recv_errors "
+        "FROM stats_packets WHERE ts >= ? ORDER BY ts",
+        (_since(hours),),
+    ).fetchall()
+    result = []
+    prev = None
+    for r in rows:
+        row = dict(r)
+        if prev is not None:
+            dtx = max(0, (row["direct_tx"] or 0) - (prev["direct_tx"] or 0))
+            ftx = max(0, (row["flood_tx"] or 0) - (prev["flood_tx"] or 0))
+            drx = max(0, (row["direct_rx"] or 0) - (prev["direct_rx"] or 0))
+            frx = max(0, (row["flood_rx"] or 0) - (prev["flood_rx"] or 0))
+            re = max(0, (row["recv_errors"] or 0) - (prev["recv_errors"] or 0))
+            result.append({
+                "bucket": row["ts"],
+                "tx_direct": dtx,
+                "tx_flood": ftx,
+                "rx_direct": drx,
+                "rx_flood": frx,
+                "rx_errors": re,
+                "total": dtx + ftx + drx + frx,
+            })
         prev = row
     return result
 
