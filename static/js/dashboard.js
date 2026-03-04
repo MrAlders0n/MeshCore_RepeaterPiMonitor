@@ -657,7 +657,10 @@
     function setupUsbRelay() {
         var btn = document.getElementById('usb-relay-btn');
         var statusEl = document.getElementById('usb-relay-status');
+        var deviceList = document.getElementById('usb-device-list');
         var usbEnabled = false;
+        var devicePollTimer = null;
+        var devicePollCount = 0;
 
         function updateBtn(enabled) {
             usbEnabled = enabled;
@@ -665,10 +668,55 @@
             btn.classList.toggle('active-toggle', enabled);
         }
 
+        function renderDevices(devices) {
+            if (!devices || !devices.length) {
+                deviceList.style.display = 'none';
+                deviceList.innerHTML = '';
+                return;
+            }
+            deviceList.style.display = '';
+            deviceList.innerHTML = devices.map(function (d) {
+                return '<div class="usb-device-item">'
+                    + '<span class="usb-device-name">' + d.name + '</span>'
+                    + '<span class="usb-device-path">' + d.path + '</span>'
+                    + '</div>';
+            }).join('');
+        }
+
+        function refreshUsbStatus() {
+            return fetchJSON('/api/v1/radio/usb').then(function (d) {
+                updateBtn(d.enabled);
+                renderDevices(d.devices);
+                return d;
+            });
+        }
+
+        function startDevicePoll() {
+            stopDevicePoll();
+            devicePollCount = 0;
+            devicePollTimer = setInterval(function () {
+                devicePollCount++;
+                fetchJSON('/api/v1/radio/usb').then(function (d) {
+                    renderDevices(d.devices);
+                    // Stop polling once we find devices or after 5 attempts
+                    if ((d.devices && d.devices.length) || devicePollCount >= 5) {
+                        stopDevicePoll();
+                    }
+                }).catch(function () {
+                    stopDevicePoll();
+                });
+            }, 2000);
+        }
+
+        function stopDevicePoll() {
+            if (devicePollTimer) {
+                clearInterval(devicePollTimer);
+                devicePollTimer = null;
+            }
+        }
+
         // Get initial state
-        fetchJSON('/api/v1/radio/usb').then(function (d) {
-            updateBtn(d.enabled);
-        }).catch(noop);
+        refreshUsbStatus().catch(noop);
 
         btn.addEventListener('click', function () {
             var newState = !usbEnabled;
@@ -687,6 +735,14 @@
                     updateBtn(newState);
                     statusEl.textContent = newState ? 'Enabled' : 'Disabled';
                     statusEl.className = 'settings-save-status success';
+                    if (newState) {
+                        // Poll for USB device to appear after enumeration
+                        renderDevices([]);
+                        startDevicePoll();
+                    } else {
+                        stopDevicePoll();
+                        renderDevices([]);
+                    }
                 } else {
                     updateBtn(usbEnabled);
                     statusEl.textContent = resp.data.error || 'Failed';

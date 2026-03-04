@@ -692,6 +692,36 @@ td.dir-rx { color: var(--green); }
     color: #e65100;
 }
 
+.usb-device-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.usb-device-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.usb-device-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    word-break: break-all;
+}
+
+.usb-device-path {
+    font-size: 0.75rem;
+    font-family: monospace;
+    color: var(--text-muted);
+}
+
 .bootloader-btn:hover:not(:disabled) {
     background: rgba(230, 81, 0, 0.1);
     border-color: #e65100;

@@ -524,6 +524,18 @@ def radio_bootloader():
     return jsonify({"status": "ok"})
 
 
+def _detect_usb_serial_devices():
+    """List symlinks in /dev/serial/by-id/."""
+    by_id = "/dev/serial/by-id"
+    if not os.path.isdir(by_id):
+        return []
+    devices = []
+    for name in sorted(os.listdir(by_id)):
+        target = os.path.realpath(os.path.join(by_id, name))
+        devices.append({"name": name, "path": target})
+    return devices
+
+
 @api.route("/radio/usb")
 def radio_usb_status():
     pin = config.USB_RELAY_GPIO_PIN
@@ -535,9 +547,12 @@ def radio_usb_status():
         # pinctrl get output contains "hi" or "lo" for the current level
         output = result.stdout.strip().lower()
         enabled = "hi" in output
-        return jsonify({"enabled": enabled})
+        return jsonify({
+            "enabled": enabled,
+            "devices": _detect_usb_serial_devices(),
+        })
     except Exception as e:
-        return jsonify({"enabled": False, "error": str(e)})
+        return jsonify({"enabled": False, "devices": [], "error": str(e)})
 
 
 @api.route("/radio/usb", methods=["POST"])
