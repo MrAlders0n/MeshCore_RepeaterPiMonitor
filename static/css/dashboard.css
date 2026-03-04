@@ -675,6 +675,12 @@ td.dir-rx { color: var(--green); }
     cursor: not-allowed;
 }
 
+.reboot-btn.active-toggle {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
 .radio-control-btns {
     display: flex;
     gap: 10px;

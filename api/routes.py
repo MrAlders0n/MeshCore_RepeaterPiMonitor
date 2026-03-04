@@ -522,3 +522,35 @@ def radio_bootloader():
 
     threading.Thread(target=do_bootloader, daemon=True).start()
     return jsonify({"status": "ok"})
+
+
+@api.route("/radio/usb")
+def radio_usb_status():
+    pin = config.USB_RELAY_GPIO_PIN
+    try:
+        result = subprocess.run(
+            ["pinctrl", "get", str(pin)],
+            capture_output=True, text=True, timeout=5,
+        )
+        # pinctrl get output contains "hi" or "lo" for the current level
+        output = result.stdout.strip().lower()
+        enabled = "hi" in output
+        return jsonify({"enabled": enabled})
+    except Exception as e:
+        return jsonify({"enabled": False, "error": str(e)})
+
+
+@api.route("/radio/usb", methods=["POST"])
+def radio_usb_toggle():
+    data = request.get_json(force=True)
+    enable = data.get("enabled", True)
+    pin = config.USB_RELAY_GPIO_PIN
+    level = "dh" if enable else "dl"
+    try:
+        subprocess.run(
+            ["pinctrl", "set", str(pin), "op", level],
+            capture_output=True, text=True, timeout=5, check=True,
+        )
+        return jsonify({"status": "ok", "enabled": enable})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

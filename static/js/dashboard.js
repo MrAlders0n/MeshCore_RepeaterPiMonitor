@@ -654,6 +654,56 @@
         });
     }
 
+    function setupUsbRelay() {
+        var btn = document.getElementById('usb-relay-btn');
+        var statusEl = document.getElementById('usb-relay-status');
+        var usbEnabled = false;
+
+        function updateBtn(enabled) {
+            usbEnabled = enabled;
+            btn.textContent = enabled ? 'Disable Radio USB' : 'Enable Radio USB';
+            btn.classList.toggle('active-toggle', enabled);
+        }
+
+        // Get initial state
+        fetchJSON('/api/v1/radio/usb').then(function (d) {
+            updateBtn(d.enabled);
+        }).catch(noop);
+
+        btn.addEventListener('click', function () {
+            var newState = !usbEnabled;
+            btn.disabled = true;
+            btn.textContent = newState ? 'Enabling...' : 'Disabling...';
+
+            fetch('/api/v1/radio/usb', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: newState }),
+            })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+            .then(function (resp) {
+                btn.disabled = false;
+                if (resp.ok) {
+                    updateBtn(newState);
+                    statusEl.textContent = newState ? 'Enabled' : 'Disabled';
+                    statusEl.className = 'settings-save-status success';
+                } else {
+                    updateBtn(usbEnabled);
+                    statusEl.textContent = resp.data.error || 'Failed';
+                    statusEl.className = 'settings-save-status error';
+                }
+                setTimeout(function () { statusEl.textContent = ''; }, 3000);
+            })
+            .catch(function () {
+                btn.disabled = false;
+                updateBtn(usbEnabled);
+                statusEl.textContent = 'Network error';
+                statusEl.className = 'settings-save-status error';
+                setTimeout(function () { statusEl.textContent = ''; }, 3000);
+            });
+        });
+    }
+
     function refreshServices() {
         fetchJSON('/api/v1/services').then(function (services) {
             services.forEach(function (svc) {
@@ -1030,6 +1080,7 @@
     setupMapFullscreen();
     setupFirmwareFlash();
     setupRebootRadio();
+    setupUsbRelay();
     setupServices();
     setupTerminal();
     setupSettings();
