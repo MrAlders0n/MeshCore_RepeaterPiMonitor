@@ -429,7 +429,7 @@ td.dir-rx { color: var(--green); }
 /* Tools Tab */
 .tools-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
     padding: 20px;
 }
@@ -860,6 +860,10 @@ footer strong {
 }
 
 /* Terminal Card */
+.tool-card-wide {
+    grid-column: span 2;
+}
+
 .tool-card-terminal {
     grid-column: 1 / -1;
 }
@@ -1112,6 +1116,10 @@ footer strong {
     .settings-grid {
         grid-template-columns: 1fr;
         padding: 12px;
+    }
+
+    .tool-card-wide {
+        grid-column: span 1;
     }
 
     .status-grid {
