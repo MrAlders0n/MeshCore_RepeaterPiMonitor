@@ -211,15 +211,13 @@ class StatsPoller:
                 process_count=proc_count,
             )
 
-            # Per-device disk IO (skip virtual devices like loop*, ram*, dm-*)
+            # Per-device disk IO — only physical disks we care about
             perdisk = psutil.disk_io_counters(perdisk=True)
             if perdisk:
-                for dev, counters in perdisk.items():
-                    if dev.startswith(("loop", "ram", "dm-", "zram")):
-                        continue
-                    models.insert_disk_io(
-                        ts, dev, counters.read_bytes, counters.write_bytes
-                    )
+                for dev in ("mmcblk0", "sda"):
+                    if dev in perdisk:
+                        c = perdisk[dev]
+                        models.insert_disk_io(ts, dev, c.read_bytes, c.write_bytes)
         except Exception:
             logger.exception("Error collecting Pi health metrics")
 
