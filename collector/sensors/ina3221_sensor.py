@@ -21,11 +21,20 @@ def read() -> dict | None:
     for attempt in range(3):
         try:
             i2c = board.I2C()
-            ina = adafruit_ina3221.INA3221(i2c, address=0x40, enable=[0, 1])
+            ina = adafruit_ina3221.INA3221(i2c, address=0x40, enable=[0, 1, 2])
+            # Explicitly ensure ch1 is enabled
+            ina[1].enable(True)
             ch0_v = ina[0].bus_voltage
             ch0_i = ina[0].current
+            ch0_sv = ina[0].shunt_voltage
             ch1_v = ina[1].bus_voltage
             ch1_i = ina[1].current
+            ch1_sv = ina[1].shunt_voltage
+            if attempt == 0:
+                logger.info("INA3221 raw: ch0 bus=%.4fV shunt=%.4fmV i=%.2fmA enabled=%s | "
+                            "ch1 bus=%.4fV shunt=%.4fmV i=%.2fmA enabled=%s",
+                             ch0_v, ch0_sv, ch0_i, ina[0].enabled,
+                             ch1_v, ch1_sv, ch1_i, ina[1].enabled)
             return {
                 "ch0_voltage": round(ch0_v, 4),
                 "ch0_current": round(ch0_i, 2),
