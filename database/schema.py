@@ -103,8 +103,44 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS stats_sensor_power (
+    ts          INTEGER PRIMARY KEY,
+    ch0_voltage REAL,
+    ch0_current REAL,
+    ch0_power   REAL,
+    ch1_voltage REAL,
+    ch1_current REAL,
+    ch1_power   REAL
+);
+
+CREATE TABLE IF NOT EXISTS stats_sensor_env (
+    ts          INTEGER PRIMARY KEY,
+    temperature REAL,
+    humidity    REAL,
+    pressure    REAL
+);
+
+CREATE TABLE IF NOT EXISTS stats_sensor_accel (
+    ts       INTEGER PRIMARY KEY,
+    vib_avg  REAL,
+    vib_peak REAL,
+    tilt_avg REAL,
+    x_avg    REAL,
+    y_avg    REAL,
+    z_avg    REAL
+);
+
+CREATE TABLE IF NOT EXISTS sensor_lightning_events (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts          INTEGER NOT NULL,
+    event_type  INTEGER NOT NULL,
+    distance_km REAL,
+    energy      REAL
+);
+
 CREATE INDEX IF NOT EXISTS idx_packet_log_ts ON packet_log(ts);
 CREATE INDEX IF NOT EXISTS idx_neighbor_sightings_ts ON neighbor_sightings(ts);
+CREATE INDEX IF NOT EXISTS idx_lightning_events_ts ON sensor_lightning_events(ts);
 """
 
 

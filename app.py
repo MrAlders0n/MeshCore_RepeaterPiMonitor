@@ -12,6 +12,7 @@ from database import models
 from api.routes import api
 from api.terminal import register_terminal_routes
 from collector.stats_poller import StatsPoller
+from collector.sensor_poller import SensorPoller
 
 logging.basicConfig(
     level=logging.INFO,
@@ -79,9 +80,18 @@ def create_app() -> Flask:
     app.config["poller"] = poller
     poller.start()
 
+    # Start sensor poller
+    sensor_poller = None
+    if config.SENSOR_POLL_ENABLED:
+        sensor_poller = SensorPoller()
+        app.config["sensor_poller"] = sensor_poller
+        sensor_poller.start()
+
     def shutdown_handler(signum, frame):
         logger.info("Shutting down collector...")
         poller.stop()
+        if sensor_poller:
+            sensor_poller.stop()
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, shutdown_handler)

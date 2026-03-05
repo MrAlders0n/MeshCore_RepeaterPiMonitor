@@ -12,6 +12,9 @@
     var piCurrentHours = 6;
     var batteryChartInitialized = false;
 
+    var sensorChartsInitialized = false;
+    var sensorCurrentHours = 6;
+
     var appSettings = {
         power_source: 'ina3221',
         ina_solar_channel: 'ch1',
@@ -172,6 +175,117 @@
         });
     }
 
+    // ── Sensor Charts ────────────────────────────────────
+
+    function initSensorCharts() {
+        SensorCharts.init({
+            battVolt: document.getElementById('chart-sensor-batt-volt'),
+            battCurr: document.getElementById('chart-sensor-batt-curr'),
+            loadVolt: document.getElementById('chart-sensor-load-volt'),
+            loadCurr: document.getElementById('chart-sensor-load-curr'),
+            temp: document.getElementById('chart-sensor-temp'),
+            humidity: document.getElementById('chart-sensor-humidity'),
+            pressure: document.getElementById('chart-sensor-pressure'),
+            vibration: document.getElementById('chart-sensor-vibration'),
+        });
+        sensorChartsInitialized = true;
+    }
+
+    function resizeSensorCharts() {
+        SensorCharts.resize();
+    }
+
+    function refreshSensors() {
+        var h = sensorCurrentHours;
+
+        fetchJSON('/api/v1/stats/sensors/power?hours=' + h).then(function (d) {
+            SensorCharts.updatePower(d);
+            updateSensorPowerCards(d);
+        }).catch(function (e) { console.warn('Sensor power fetch failed:', e); });
+
+        fetchJSON('/api/v1/stats/sensors/env?hours=' + h).then(function (d) {
+            SensorCharts.updateEnv(d);
+            updateSensorEnvCards(d);
+        }).catch(function (e) { console.warn('Sensor env fetch failed:', e); });
+
+        fetchJSON('/api/v1/stats/sensors/accel?hours=' + h).then(function (d) {
+            SensorCharts.updateAccel(d);
+            updateSensorAccelCards(d);
+        }).catch(function (e) { console.warn('Sensor accel fetch failed:', e); });
+
+        fetchJSON('/api/v1/stats/sensors/lightning?hours=' + h).then(function (events) {
+            renderLightningTable(events);
+        }).catch(function (e) { console.warn('Lightning fetch failed:', e); });
+
+        document.getElementById('sensor-last-update').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+    }
+
+    function updateSensorPowerCards(d) {
+        if (!d.timestamps || !d.timestamps.length) return;
+        var last = d.timestamps.length - 1;
+        var v = d.ch0_voltage[last];
+        var i0 = d.ch0_current[last];
+        var i1 = d.ch1_current[last];
+        document.getElementById('sensor-batt-v').textContent = v != null ? v.toFixed(3) + ' V' : '--';
+        document.getElementById('sensor-batt-i').textContent = i0 != null ? i0.toFixed(1) : '--';
+        document.getElementById('sensor-load-i').textContent = i1 != null ? i1.toFixed(1) : '--';
+    }
+
+    function updateSensorEnvCards(d) {
+        if (!d.timestamps || !d.timestamps.length) return;
+        var last = d.timestamps.length - 1;
+        var t = d.temperature[last];
+        var h = d.humidity[last];
+        var p = d.pressure[last];
+        document.getElementById('sensor-temp-val').textContent = t != null ? t.toFixed(1) + '\u00b0C' : '--';
+        document.getElementById('sensor-hum-val').textContent = h != null ? h.toFixed(1) + '%' : '--';
+        document.getElementById('sensor-press-val').textContent = p != null ? p.toFixed(1) + ' hPa' : '--';
+    }
+
+    function updateSensorAccelCards(d) {
+        if (!d.timestamps || !d.timestamps.length) return;
+        var last = d.timestamps.length - 1;
+        var v = d.vib_avg[last];
+        document.getElementById('sensor-vib-val').textContent = v != null ? v.toFixed(2) + ' m/s\u00b2' : '--';
+    }
+
+    var LIGHTNING_TYPES = { 1: 'Strike', 2: 'Disturber', 3: 'Noise' };
+    var LIGHTNING_CLASSES = { 1: 'lightning-type-strike', 2: 'lightning-type-disturber', 3: 'lightning-type-noise' };
+
+    function renderLightningTable(events) {
+        var tbody = document.getElementById('lightning-tbody');
+        tbody.innerHTML = '';
+        var alertEl = document.getElementById('lightning-alert');
+        var hasRecent = false;
+        var now = Date.now() / 1000;
+
+        events.forEach(function (evt) {
+            if (evt.event_type === 1 && (now - evt.ts) < 3600) hasRecent = true;
+            var tr = document.createElement('tr');
+            var cls = LIGHTNING_CLASSES[evt.event_type] || '';
+            tr.innerHTML =
+                '<td>' + new Date(evt.ts * 1000).toLocaleString() + '</td>' +
+                '<td class="' + cls + '">' + (LIGHTNING_TYPES[evt.event_type] || 'Unknown') + '</td>' +
+                '<td>' + (evt.distance_km != null ? evt.distance_km : '--') + '</td>' +
+                '<td>' + (evt.energy != null ? evt.energy : '--') + '</td>';
+            tbody.appendChild(tr);
+        });
+
+        alertEl.style.display = hasRecent ? 'inline-block' : 'none';
+    }
+
+    function setupSensorTimeButtons() {
+        var buttons = document.querySelectorAll('.sensor-time-btn');
+        buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                buttons.forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                sensorCurrentHours = parseInt(btn.getAttribute('data-hours'), 10);
+                refreshSensors();
+            });
+        });
+    }
+
     // ── Tabs ─────────────────────────────────────────────
 
     function setupTabs() {
@@ -215,6 +329,15 @@
                 resizePiCharts();
             }, 50);
             refreshPiHealth();
+            stopServicesRefresh();
+        } else if (tabId === 'sensors') {
+            if (!sensorChartsInitialized) {
+                initSensorCharts();
+            }
+            setTimeout(function () {
+                resizeSensorCharts();
+            }, 50);
+            refreshSensors();
             stopServicesRefresh();
         } else if (tabId === 'tools') {
             startServicesRefresh();
@@ -331,6 +454,8 @@
             refreshMeshCore();
         } else if (activeTab === 'raspberry-pi') {
             refreshPiHealth();
+        } else if (activeTab === 'sensors') {
+            refreshSensors();
         }
     }
 
@@ -1089,6 +1214,9 @@
             if (activeTab === 'raspberry-pi' && piChartsInitialized) {
                 resizePiCharts();
             }
+            if (activeTab === 'sensors' && sensorChartsInitialized) {
+                resizeSensorCharts();
+            }
             if (terminalConnected && terminalFitAddon) {
                 terminalFitAddon.fit();
             }
@@ -1102,6 +1230,7 @@
     initCharts();
     setupTimeButtons();
     setupPiTimeButtons();
+    setupSensorTimeButtons();
     setupThemeToggle();
     setupMapFullscreen();
     setupFirmwareFlash();

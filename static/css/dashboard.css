@@ -1115,6 +1115,44 @@ footer strong {
     color: var(--red);
 }
 
+/* Sensor Time Controls */
+.sensor-time-controls {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+#sensor-last-update {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Lightning Alert */
+.lightning-alert {
+    background: var(--red);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    animation: lightning-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes lightning-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.lightning-type-strike { color: var(--red); font-weight: 700; }
+.lightning-type-disturber { color: var(--yellow); }
+.lightning-type-noise { color: var(--text-muted); }
+
 /* Responsive */
 @media (max-width: 768px) {
     .charts-grid {
@@ -1162,7 +1200,8 @@ footer strong {
         padding: 12px 12px 0;
     }
 
-    .pi-time-controls {
+    .pi-time-controls,
+    .sensor-time-controls {
         padding: 8px 12px;
     }
 

@@ -493,6 +493,41 @@ def system_reboot():
     return jsonify({"status": "rebooting"})
 
 
+# ── Sensor Endpoints ──────────────────────────────────
+
+@api.route("/stats/sensors/power")
+def stats_sensor_power():
+    return jsonify(models.query_sensor_power(_hours()))
+
+
+@api.route("/stats/sensors/env")
+def stats_sensor_env():
+    return jsonify(models.query_sensor_env(_hours()))
+
+
+@api.route("/stats/sensors/accel")
+def stats_sensor_accel():
+    return jsonify(models.query_sensor_accel(_hours()))
+
+
+@api.route("/stats/sensors/lightning")
+def stats_sensor_lightning():
+    return jsonify(models.query_lightning_events(_hours()))
+
+
+@api.route("/stats/sensors/lightning/summary")
+def stats_sensor_lightning_summary():
+    return jsonify(models.query_lightning_summary(_hours()))
+
+
+@api.route("/sensors/status")
+def sensors_status():
+    sp = current_app.config.get("sensor_poller")
+    if sp:
+        return jsonify(sp.status)
+    return jsonify({"running": False, "sensors": {}})
+
+
 @api.route("/radio/reset", methods=["POST"])
 def radio_reset():
     poller = current_app.config.get("poller")

@@ -13,6 +13,10 @@ TABLES_WITH_TS = [
     "stats_pi_health",
     "packet_log",
     "neighbor_sightings",
+    "stats_sensor_power",
+    "stats_sensor_env",
+    "stats_sensor_accel",
+    "sensor_lightning_events",
 ]
 
 

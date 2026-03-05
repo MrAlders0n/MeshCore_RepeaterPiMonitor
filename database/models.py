@@ -414,6 +414,117 @@ def query_pi_network_io(hours: int = 24) -> list[dict]:
     return result
 
 
+# ── Sensor inserts ───────────────────────────────────────────
+
+def insert_sensor_power(ts: int, ch0_v, ch0_i, ch0_p, ch1_v, ch1_i, ch1_p):
+    _conn().execute(
+        "INSERT OR REPLACE INTO stats_sensor_power "
+        "(ts, ch0_voltage, ch0_current, ch0_power, ch1_voltage, ch1_current, ch1_power) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (ts, ch0_v, ch0_i, ch0_p, ch1_v, ch1_i, ch1_p),
+    )
+    _conn().commit()
+
+
+def insert_sensor_env(ts: int, temperature, humidity, pressure):
+    _conn().execute(
+        "INSERT OR REPLACE INTO stats_sensor_env "
+        "(ts, temperature, humidity, pressure) VALUES (?, ?, ?, ?)",
+        (ts, temperature, humidity, pressure),
+    )
+    _conn().commit()
+
+
+def insert_sensor_accel(ts: int, vib_avg, vib_peak, tilt_avg, x_avg, y_avg, z_avg):
+    _conn().execute(
+        "INSERT OR REPLACE INTO stats_sensor_accel "
+        "(ts, vib_avg, vib_peak, tilt_avg, x_avg, y_avg, z_avg) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (ts, vib_avg, vib_peak, tilt_avg, x_avg, y_avg, z_avg),
+    )
+    _conn().commit()
+
+
+def insert_lightning_event(ts: int, event_type: int, distance_km, energy):
+    _conn().execute(
+        "INSERT INTO sensor_lightning_events "
+        "(ts, event_type, distance_km, energy) VALUES (?, ?, ?, ?)",
+        (ts, event_type, distance_km, energy),
+    )
+    _conn().commit()
+
+
+# ── Sensor queries ───────────────────────────────────────────
+
+def query_sensor_power(hours: int = 24) -> dict:
+    rows = _conn().execute(
+        "SELECT ts, ch0_voltage, ch0_current, ch0_power, "
+        "ch1_voltage, ch1_current, ch1_power "
+        "FROM stats_sensor_power WHERE ts >= ? ORDER BY ts",
+        (_since(hours),),
+    ).fetchall()
+    return {
+        "timestamps": [r["ts"] for r in rows],
+        "ch0_voltage": [r["ch0_voltage"] for r in rows],
+        "ch0_current": [r["ch0_current"] for r in rows],
+        "ch0_power": [r["ch0_power"] for r in rows],
+        "ch1_voltage": [r["ch1_voltage"] for r in rows],
+        "ch1_current": [r["ch1_current"] for r in rows],
+        "ch1_power": [r["ch1_power"] for r in rows],
+    }
+
+
+def query_sensor_env(hours: int = 168) -> dict:
+    rows = _conn().execute(
+        "SELECT ts, temperature, humidity, pressure "
+        "FROM stats_sensor_env WHERE ts >= ? ORDER BY ts",
+        (_since(hours),),
+    ).fetchall()
+    return {
+        "timestamps": [r["ts"] for r in rows],
+        "temperature": [r["temperature"] for r in rows],
+        "humidity": [r["humidity"] for r in rows],
+        "pressure": [r["pressure"] for r in rows],
+    }
+
+
+def query_sensor_accel(hours: int = 24) -> dict:
+    rows = _conn().execute(
+        "SELECT ts, vib_avg, vib_peak, tilt_avg, x_avg, y_avg, z_avg "
+        "FROM stats_sensor_accel WHERE ts >= ? ORDER BY ts",
+        (_since(hours),),
+    ).fetchall()
+    return {
+        "timestamps": [r["ts"] for r in rows],
+        "vib_avg": [r["vib_avg"] for r in rows],
+        "vib_peak": [r["vib_peak"] for r in rows],
+        "tilt_avg": [r["tilt_avg"] for r in rows],
+        "x_avg": [r["x_avg"] for r in rows],
+        "y_avg": [r["y_avg"] for r in rows],
+        "z_avg": [r["z_avg"] for r in rows],
+    }
+
+
+def query_lightning_events(hours: int = 720) -> list[dict]:
+    rows = _conn().execute(
+        "SELECT id, ts, event_type, distance_km, energy "
+        "FROM sensor_lightning_events WHERE ts >= ? ORDER BY ts DESC",
+        (_since(hours),),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def query_lightning_summary(hours: int = 24) -> list[dict]:
+    since = _since(hours)
+    rows = _conn().execute(
+        "SELECT (ts / 3600) * 3600 AS hour, event_type, COUNT(*) AS count "
+        "FROM sensor_lightning_events WHERE ts >= ? "
+        "GROUP BY hour, event_type ORDER BY hour",
+        (since,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def db_size_bytes() -> int:
     import os
     try:

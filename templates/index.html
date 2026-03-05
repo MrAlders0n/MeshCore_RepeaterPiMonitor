@@ -31,6 +31,7 @@
     <nav id="tab-bar">
         <button class="tab-btn active" data-tab="meshcore">MeshCore</button>
         <button class="tab-btn" data-tab="raspberry-pi">Raspberry Pi</button>
+        <button class="tab-btn" data-tab="sensors">Sensors</button>
         <button class="tab-btn" data-tab="tools">Tools</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
     </nav>
@@ -279,6 +280,115 @@
         </div>
     </div>
 
+    <!-- Tab: Sensors -->
+    <div id="tab-sensors" class="tab-panel">
+        <!-- Sensor Time Range Selector -->
+        <nav class="sensor-time-controls">
+            <button class="time-btn sensor-time-btn" data-hours="1">1h</button>
+            <button class="time-btn sensor-time-btn active" data-hours="6">6h</button>
+            <button class="time-btn sensor-time-btn" data-hours="24">24h</button>
+            <button class="time-btn sensor-time-btn" data-hours="168">7d</button>
+            <button class="time-btn sensor-time-btn" data-hours="720">30d</button>
+            <span id="sensor-last-update">--</span>
+        </nav>
+
+        <!-- Sensor Status Cards -->
+        <div class="status-grid">
+            <div class="status-card">
+                <span class="status-label">Battery V</span>
+                <span class="status-value" id="sensor-batt-v">--</span>
+                <span class="status-sub" id="sensor-batt-v-sub">Ch0 voltage</span>
+            </div>
+            <div class="status-card">
+                <span class="status-label">Battery mA</span>
+                <span class="status-value" id="sensor-batt-i">--</span>
+                <span class="status-sub" id="sensor-batt-i-sub">Ch0 current</span>
+            </div>
+            <div class="status-card">
+                <span class="status-label">Load mA</span>
+                <span class="status-value" id="sensor-load-i">--</span>
+                <span class="status-sub" id="sensor-load-i-sub">Ch1 current</span>
+            </div>
+            <div class="status-card">
+                <span class="status-label">Temp</span>
+                <span class="status-value" id="sensor-temp-val">--</span>
+                <span class="status-sub" id="sensor-temp-sub">BME280</span>
+            </div>
+            <div class="status-card">
+                <span class="status-label">Humidity</span>
+                <span class="status-value" id="sensor-hum-val">--</span>
+                <span class="status-sub" id="sensor-hum-sub">BME280</span>
+            </div>
+            <div class="status-card">
+                <span class="status-label">Pressure</span>
+                <span class="status-value" id="sensor-press-val">--</span>
+                <span class="status-sub" id="sensor-press-sub">BME280</span>
+            </div>
+            <div class="status-card">
+                <span class="status-label">Vibration</span>
+                <span class="status-value" id="sensor-vib-val">--</span>
+                <span class="status-sub" id="sensor-vib-sub">LIS2DW12</span>
+            </div>
+        </div>
+
+        <!-- Sensor Charts Grid -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Battery Voltage (Ch0)</h3>
+                <div id="chart-sensor-batt-volt" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Battery Current (Ch0)</h3>
+                <div id="chart-sensor-batt-curr" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Load Voltage (Ch1)</h3>
+                <div id="chart-sensor-load-volt" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Load Current (Ch1)</h3>
+                <div id="chart-sensor-load-curr" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Temperature</h3>
+                <div id="chart-sensor-temp" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Humidity</h3>
+                <div id="chart-sensor-humidity" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Barometric Pressure</h3>
+                <div id="chart-sensor-pressure" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Vibration Magnitude</h3>
+                <div id="chart-sensor-vibration" class="chart-container"></div>
+            </div>
+        </div>
+
+        <!-- Lightning Events -->
+        <div class="full-width-card">
+            <div class="card-header">
+                <h3>Lightning Events</h3>
+                <span id="lightning-alert" class="lightning-alert" style="display:none;">LIGHTNING DETECTED</span>
+            </div>
+            <div class="table-scroll">
+                <table id="lightning-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Distance (km)</th>
+                            <th>Energy</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lightning-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Tab: Tools -->
     <div id="tab-tools" class="tab-panel">
         <div class="tools-grid">
@@ -485,6 +595,7 @@
     <script src="/static/js/charts/power.js"></script>
     <script src="/static/js/charts/packets.js"></script>
     <script src="/static/js/charts/pi_health.js"></script>
+    <script src="/static/js/charts/sensors.js"></script>
     <script src="/static/js/map.js"></script>
     <script src="/static/js/dashboard.js"></script>
 </body>
