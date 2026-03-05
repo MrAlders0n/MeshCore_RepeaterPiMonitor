@@ -6,5 +6,4 @@ psutil>=5.9,<7.0
 RPi.GPIO>=0.7; platform_machine == "aarch64" or platform_machine == "armv7l"
 adafruit-circuitpython-ina3221; platform_machine == "aarch64" or platform_machine == "armv7l"
 adafruit-circuitpython-bme280; platform_machine == "aarch64" or platform_machine == "armv7l"
-adafruit-circuitpython-lis2dw12; platform_machine == "aarch64" or platform_machine == "armv7l"
 smbus2; platform_machine == "aarch64" or platform_machine == "armv7l"
