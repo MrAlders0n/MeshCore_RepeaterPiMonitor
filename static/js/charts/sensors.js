@@ -205,7 +205,7 @@ var SensorCharts = (function () {
     }
 
     function _mwToW(values) {
-        return values.map(function (v) { return v != null ? v / 1000 : null; });
+        return values.map(function (v) { return v != null ? Math.round(v / 10) / 100 : null; });
     }
 
     function _ts2data(timestamps, values) {
