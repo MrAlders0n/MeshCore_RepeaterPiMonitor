@@ -28,7 +28,7 @@ def _get_ina():
 
 
 def read() -> dict | None:
-    """Read INA3221 at 0x40. Returns ch0 (battery) and ch1 (load) data."""
+    """Read INA3221 at 0x40. Returns ch0 (battery), ch1 (load), ch2 (solar) data."""
     if not HAS_INA3221:
         return None
 
@@ -39,6 +39,8 @@ def read() -> dict | None:
             ch0_i = ina[0].current
             ch1_v = ina[1].bus_voltage
             ch1_i = ina[1].current
+            ch2_v = ina[2].bus_voltage
+            ch2_i = ina[2].current
             return {
                 "ch0_voltage": round(ch0_v, 4),
                 "ch0_current": round(ch0_i, 2),
@@ -46,6 +48,9 @@ def read() -> dict | None:
                 "ch1_voltage": round(ch1_v, 4),
                 "ch1_current": round(ch1_i, 2),
                 "ch1_power": round(ch1_v * ch1_i, 2),
+                "ch2_voltage": round(ch2_v, 4),
+                "ch2_current": round(ch2_i, 2),
+                "ch2_power": round(ch2_v * ch2_i, 2),
             }
         except Exception:
             _ina = None  # Reset on error so next attempt reinitializes

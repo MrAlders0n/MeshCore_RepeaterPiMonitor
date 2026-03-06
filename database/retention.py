@@ -18,6 +18,7 @@ TABLES_WITH_TS = [
     "stats_sensor_accel",
     "sensor_lightning_events",
     "stats_disk_io",
+    "stats_bq24074",
 ]
 
 

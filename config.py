@@ -37,3 +37,7 @@ USB_RELAY_GPIO_PIN = int(os.environ.get("MESHCORE_USB_RELAY_GPIO", "17"))
 
 SENSOR_POLL_ENABLED = os.environ.get("MESHCORE_SENSOR_POLL", "1") != "0"
 AS3935_IRQ_GPIO = int(os.environ.get("MESHCORE_AS3935_IRQ_GPIO", "18"))
+
+BQ24074_CHG_GPIO = int(os.environ.get("MESHCORE_BQ24074_CHG_GPIO", "19"))
+BQ24074_PGOOD_GPIO = int(os.environ.get("MESHCORE_BQ24074_PGOOD_GPIO", "13"))
+BQ24074_CE_GPIO = int(os.environ.get("MESHCORE_BQ24074_CE_GPIO", "6"))

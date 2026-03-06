@@ -183,6 +183,9 @@
             battCurr: document.getElementById('chart-sensor-batt-curr'),
             loadVolt: document.getElementById('chart-sensor-load-volt'),
             loadCurr: document.getElementById('chart-sensor-load-curr'),
+            solarVolt: document.getElementById('chart-sensor-solar-volt'),
+            solarCurr: document.getElementById('chart-sensor-solar-curr'),
+            chargerStatus: document.getElementById('chart-sensor-charger'),
             temp: document.getElementById('chart-sensor-temp'),
             humidity: document.getElementById('chart-sensor-humidity'),
             pressure: document.getElementById('chart-sensor-pressure'),
@@ -213,6 +216,14 @@
             updateSensorAccelCards(d);
         }).catch(function (e) { console.warn('Sensor accel fetch failed:', e); });
 
+        fetchJSON('/api/v1/stats/sensors/bq24074?hours=' + h).then(function (d) {
+            SensorCharts.updateBq24074(d);
+        }).catch(function (e) { console.warn('BQ24074 stats fetch failed:', e); });
+
+        fetchJSON('/api/v1/bq24074/status').then(function (d) {
+            updateBq24074Cards(d);
+        }).catch(function (e) { console.warn('BQ24074 live status fetch failed:', e); });
+
         fetchJSON('/api/v1/stats/sensors/lightning?hours=' + h).then(function (events) {
             renderLightningTable(events);
         }).catch(function (e) { console.warn('Lightning fetch failed:', e); });
@@ -229,6 +240,25 @@
         document.getElementById('sensor-batt-v').textContent = v != null ? v.toFixed(3) + ' V' : '--';
         document.getElementById('sensor-batt-i').textContent = i0 != null ? i0.toFixed(1) : '--';
         document.getElementById('sensor-load-i').textContent = i1 != null ? i1.toFixed(1) : '--';
+
+        var sv = d.ch2_voltage ? d.ch2_voltage[last] : null;
+        var si = d.ch2_current ? d.ch2_current[last] : null;
+        document.getElementById('sensor-solar-v').textContent = sv != null ? sv.toFixed(3) + ' V' : '--';
+        document.getElementById('sensor-solar-i').textContent = si != null ? si.toFixed(1) : '--';
+    }
+
+    function updateBq24074Cards(d) {
+        var chgEl = document.getElementById('sensor-chg-val');
+        var pgoodEl = document.getElementById('sensor-pgood-val');
+        if (d.error) {
+            chgEl.textContent = 'N/A';
+            pgoodEl.textContent = 'N/A';
+            return;
+        }
+        chgEl.textContent = d.charging ? 'Yes' : 'No';
+        chgEl.style.color = d.charging ? '#06d6a0' : '';
+        pgoodEl.textContent = d.power_good ? 'Yes' : 'No';
+        pgoodEl.style.color = d.power_good ? '#06d6a0' : '';
     }
 
     function updateSensorEnvCards(d) {
@@ -341,6 +371,7 @@
             stopServicesRefresh();
         } else if (tabId === 'tools') {
             startServicesRefresh();
+            refreshBq24074Tool();
         } else if (tabId === 'settings') {
             stopServicesRefresh();
         }
@@ -855,6 +886,62 @@
         });
     }
 
+    var bq24074ChargingEnabled = true;
+
+    function setupBq24074Tool() {
+        var btn = document.getElementById('bq24074-toggle-btn');
+        var statusMsg = document.getElementById('bq24074-status-msg');
+
+        btn.addEventListener('click', function () {
+            var newState = !bq24074ChargingEnabled;
+            btn.disabled = true;
+            btn.textContent = newState ? 'Enabling...' : 'Disabling...';
+
+            fetch('/api/v1/bq24074/charging', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: newState }),
+            })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+            .then(function (resp) {
+                btn.disabled = false;
+                if (resp.ok) {
+                    bq24074ChargingEnabled = newState;
+                    btn.textContent = newState ? 'Disable Charging' : 'Enable Charging';
+                    refreshBq24074Tool();
+                } else {
+                    statusMsg.textContent = resp.data.error || 'Failed';
+                    statusMsg.className = 'settings-save-status error';
+                    btn.textContent = bq24074ChargingEnabled ? 'Disable Charging' : 'Enable Charging';
+                    setTimeout(function () { statusMsg.textContent = ''; }, 3000);
+                }
+            })
+            .catch(function () {
+                btn.disabled = false;
+                btn.textContent = bq24074ChargingEnabled ? 'Disable Charging' : 'Enable Charging';
+                statusMsg.textContent = 'Network error';
+                statusMsg.className = 'settings-save-status error';
+                setTimeout(function () { statusMsg.textContent = ''; }, 3000);
+            });
+        });
+    }
+
+    function refreshBq24074Tool() {
+        fetchJSON('/api/v1/bq24074/status').then(function (d) {
+            if (d.error) return;
+            var chgDot = document.getElementById('bq24074-chg-dot');
+            var pgoodDot = document.getElementById('bq24074-pgood-dot');
+            chgDot.classList.toggle('active', d.charging);
+            chgDot.classList.toggle('inactive', !d.charging);
+            pgoodDot.classList.toggle('active', d.power_good);
+            pgoodDot.classList.toggle('inactive', !d.power_good);
+
+            bq24074ChargingEnabled = !d.ce_disabled;
+            var btn = document.getElementById('bq24074-toggle-btn');
+            btn.textContent = bq24074ChargingEnabled ? 'Disable Charging' : 'Enable Charging';
+        }).catch(noop);
+    }
+
     function refreshServices() {
         fetchJSON('/api/v1/services').then(function (services) {
             services.forEach(function (svc) {
@@ -1237,6 +1324,7 @@
     setupRebootRadio();
     setupUsbRelay();
     setupServices();
+    setupBq24074Tool();
     setupTerminal();
     setupSettings();
 

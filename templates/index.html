@@ -310,6 +310,26 @@
                 <span class="status-sub" id="sensor-load-i-sub">Ch1 current</span>
             </div>
             <div class="status-card">
+                <span class="status-label">Solar V</span>
+                <span class="status-value" id="sensor-solar-v">--</span>
+                <span class="status-sub" id="sensor-solar-v-sub">Ch2 voltage</span>
+            </div>
+            <div class="status-card">
+                <span class="status-label">Solar mA</span>
+                <span class="status-value" id="sensor-solar-i">--</span>
+                <span class="status-sub" id="sensor-solar-i-sub">Ch2 current</span>
+            </div>
+            <div class="status-card">
+                <span class="status-label">Charging</span>
+                <span class="status-value" id="sensor-chg-val">--</span>
+                <span class="status-sub" id="sensor-chg-sub">BQ24074</span>
+            </div>
+            <div class="status-card">
+                <span class="status-label">Power Good</span>
+                <span class="status-value" id="sensor-pgood-val">--</span>
+                <span class="status-sub" id="sensor-pgood-sub">BQ24074</span>
+            </div>
+            <div class="status-card">
                 <span class="status-label">Temp</span>
                 <span class="status-value" id="sensor-temp-val">--</span>
                 <span class="status-sub" id="sensor-temp-sub">BME280</span>
@@ -348,6 +368,18 @@
             <div class="chart-card">
                 <h3>Load Current (Ch1)</h3>
                 <div id="chart-sensor-load-curr" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Solar Voltage (Ch2)</h3>
+                <div id="chart-sensor-solar-volt" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Solar Current (Ch2)</h3>
+                <div id="chart-sensor-solar-curr" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3>Charger Status</h3>
+                <div id="chart-sensor-charger" class="chart-container"></div>
             </div>
             <div class="chart-card">
                 <h3>Temperature</h3>
@@ -472,6 +504,29 @@
                     <span id="usb-relay-status" class="settings-save-status"></span>
                 </div>
                 <div id="usb-device-list" class="usb-device-list" style="display:none;"></div>
+            </div>
+
+            <!-- BQ24074 Charger Card -->
+            <div class="tool-card">
+                <div class="tool-card-header">
+                    <span class="tool-icon">&#x1F50B;</span>
+                    <h3>BQ24074 Charger</h3>
+                </div>
+                <p class="tool-desc">Solar charger status and control.</p>
+                <div class="bq24074-status">
+                    <span class="bq24074-indicator">
+                        <span class="service-dot" id="bq24074-chg-dot"></span>
+                        Charging
+                    </span>
+                    <span class="bq24074-indicator">
+                        <span class="service-dot" id="bq24074-pgood-dot"></span>
+                        Power Good
+                    </span>
+                </div>
+                <div class="radio-control-btns">
+                    <button id="bq24074-toggle-btn" class="reboot-btn">Disable Charging</button>
+                    <span id="bq24074-status-msg" class="settings-save-status"></span>
+                </div>
             </div>
 
             <!-- Reboot Pi Card -->

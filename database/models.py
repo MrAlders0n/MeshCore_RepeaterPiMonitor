@@ -468,12 +468,15 @@ def query_pi_network_io(hours: int = 24) -> list[dict]:
 
 # ── Sensor inserts ───────────────────────────────────────────
 
-def insert_sensor_power(ts: int, ch0_v, ch0_i, ch0_p, ch1_v, ch1_i, ch1_p):
+def insert_sensor_power(ts: int, ch0_v, ch0_i, ch0_p, ch1_v, ch1_i, ch1_p,
+                         ch2_v=None, ch2_i=None, ch2_p=None):
     _conn().execute(
         "INSERT OR REPLACE INTO stats_sensor_power "
-        "(ts, ch0_voltage, ch0_current, ch0_power, ch1_voltage, ch1_current, ch1_power) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (ts, ch0_v, ch0_i, ch0_p, ch1_v, ch1_i, ch1_p),
+        "(ts, ch0_voltage, ch0_current, ch0_power, "
+        "ch1_voltage, ch1_current, ch1_power, "
+        "ch2_voltage, ch2_current, ch2_power) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (ts, ch0_v, ch0_i, ch0_p, ch1_v, ch1_i, ch1_p, ch2_v, ch2_i, ch2_p),
     )
     _conn().commit()
 
@@ -511,7 +514,8 @@ def insert_lightning_event(ts: int, event_type: int, distance_km, energy):
 def query_sensor_power(hours: int = 24) -> dict:
     rows = _conn().execute(
         "SELECT ts, ch0_voltage, ch0_current, ch0_power, "
-        "ch1_voltage, ch1_current, ch1_power "
+        "ch1_voltage, ch1_current, ch1_power, "
+        "ch2_voltage, ch2_current, ch2_power "
         "FROM stats_sensor_power WHERE ts >= ? ORDER BY ts",
         (_since(hours),),
     ).fetchall()
@@ -523,6 +527,9 @@ def query_sensor_power(hours: int = 24) -> dict:
         "ch1_voltage": [r["ch1_voltage"] for r in rows],
         "ch1_current": [r["ch1_current"] for r in rows],
         "ch1_power": [r["ch1_power"] for r in rows],
+        "ch2_voltage": [r["ch2_voltage"] for r in rows],
+        "ch2_current": [r["ch2_current"] for r in rows],
+        "ch2_power": [r["ch2_power"] for r in rows],
     }
 
 
@@ -575,6 +582,30 @@ def query_lightning_summary(hours: int = 24) -> list[dict]:
         (since,),
     ).fetchall()
     return [dict(r) for r in rows]
+
+
+# ── BQ24074 charger ──────────────────────────────────────────
+
+def insert_bq24074_status(ts: int, charging: bool, pgood: bool):
+    _conn().execute(
+        "INSERT OR REPLACE INTO stats_bq24074 (ts, charging, pgood) "
+        "VALUES (?, ?, ?)",
+        (ts, int(charging), int(pgood)),
+    )
+    _conn().commit()
+
+
+def query_bq24074_status(hours: int = 24) -> dict:
+    rows = _conn().execute(
+        "SELECT ts, charging, pgood "
+        "FROM stats_bq24074 WHERE ts >= ? ORDER BY ts",
+        (_since(hours),),
+    ).fetchall()
+    return {
+        "timestamps": [r["ts"] for r in rows],
+        "charging": [r["charging"] for r in rows],
+        "pgood": [r["pgood"] for r in rows],
+    }
 
 
 def db_size_bytes() -> int:

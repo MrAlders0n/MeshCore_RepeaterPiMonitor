@@ -11,6 +11,7 @@ import config
 from database import models
 from collector import firmware_flasher
 from collector import radio_gpio
+from collector.sensors import bq24074_sensor
 
 try:
     import psutil
@@ -527,6 +528,29 @@ def stats_sensor_lightning():
 @api.route("/stats/sensors/lightning/summary")
 def stats_sensor_lightning_summary():
     return jsonify(models.query_lightning_summary(_hours()))
+
+
+@api.route("/stats/sensors/bq24074")
+def stats_sensor_bq24074():
+    return jsonify(models.query_bq24074_status(_hours()))
+
+
+@api.route("/bq24074/status")
+def bq24074_live_status():
+    data = bq24074_sensor.read_status()
+    if data is None:
+        return jsonify({"error": "BQ24074 not available"}), 501
+    return jsonify(data)
+
+
+@api.route("/bq24074/charging", methods=["POST"])
+def bq24074_charging():
+    if not bq24074_sensor.HAS_BQ24074:
+        return jsonify({"error": "BQ24074 not available"}), 501
+    data = request.get_json(force=True)
+    enabled = data.get("enabled", True)
+    bq24074_sensor.set_charging_enabled(enabled)
+    return jsonify({"status": "ok", "enabled": enabled})
 
 
 @api.route("/sensors/status")

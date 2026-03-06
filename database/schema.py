@@ -150,6 +150,12 @@ CREATE INDEX IF NOT EXISTS idx_packet_log_ts ON packet_log(ts);
 CREATE INDEX IF NOT EXISTS idx_neighbor_sightings_ts ON neighbor_sightings(ts);
 CREATE INDEX IF NOT EXISTS idx_lightning_events_ts ON sensor_lightning_events(ts);
 CREATE INDEX IF NOT EXISTS idx_disk_io_ts ON stats_disk_io(ts);
+
+CREATE TABLE IF NOT EXISTS stats_bq24074 (
+    ts       INTEGER PRIMARY KEY,
+    charging INTEGER,
+    pgood    INTEGER
+);
 """
 
 
@@ -168,6 +174,9 @@ MIGRATIONS = [
     "ALTER TABLE stats_packets ADD COLUMN flood_tx INTEGER",
     "ALTER TABLE stats_packets ADD COLUMN direct_rx INTEGER",
     "ALTER TABLE stats_packets ADD COLUMN flood_rx INTEGER",
+    "ALTER TABLE stats_sensor_power ADD COLUMN ch2_voltage REAL",
+    "ALTER TABLE stats_sensor_power ADD COLUMN ch2_current REAL",
+    "ALTER TABLE stats_sensor_power ADD COLUMN ch2_power REAL",
 ]
 
 

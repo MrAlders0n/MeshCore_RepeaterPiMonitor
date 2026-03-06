@@ -7,7 +7,7 @@ import time
 
 import config
 from database import models
-from collector.sensors import ina3221_sensor, bme280_sensor, lis2dw12_sensor
+from collector.sensors import ina3221_sensor, bme280_sensor, lis2dw12_sensor, bq24074_sensor
 from collector.sensors.as3935_sensor import AS3935
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,7 @@ class SensorPoller:
             "bme280": {"ok": False, "last_error": None},
             "lis2dw12": {"ok": False, "last_error": None},
             "as3935": {"ok": False, "last_error": None},
+            "bq24074": {"ok": False, "last_error": None},
         }
 
     @property
@@ -52,11 +53,12 @@ class SensorPoller:
         self._sensor_status["ina3221"]["ok"] = ina3221_sensor.HAS_INA3221
         self._sensor_status["bme280"]["ok"] = bme280_sensor.HAS_BME280
         self._sensor_status["lis2dw12"]["ok"] = lis2dw12_sensor.HAS_LIS2DW12
+        self._sensor_status["bq24074"]["ok"] = bq24074_sensor.HAS_BQ24074
 
         available = []
         missing = []
         for name, mod in [("ina3221", ina3221_sensor), ("bme280", bme280_sensor),
-                          ("lis2dw12", lis2dw12_sensor)]:
+                          ("lis2dw12", lis2dw12_sensor), ("bq24074", bq24074_sensor)]:
             flag = getattr(mod, "HAS_" + name.upper(), False)
             (available if flag else missing).append(name)
         if self._as3935.available:
@@ -95,9 +97,10 @@ class SensorPoller:
         while not self._stop_event.is_set():
             now = time.time()
 
-            # INA3221 — every 10s
+            # INA3221 + BQ24074 — every 10s
             if now - last_power >= POWER_INTERVAL:
                 self._poll_power(now)
+                self._poll_bq24074(now)
                 last_power = now
 
             # LIS2DW12 — every 5s
@@ -116,11 +119,12 @@ class SensorPoller:
             # Log summary every 5 minutes
             cycle += 1
             if cycle % (300 // POLL_TICK) == 0:
-                logger.info("SensorPoller alive — power=%s bme=%s accel=%s as3935=%s",
+                logger.info("SensorPoller alive — power=%s bme=%s accel=%s as3935=%s bq24074=%s",
                             self._sensor_status["ina3221"]["ok"],
                             self._sensor_status["bme280"]["ok"],
                             self._sensor_status["lis2dw12"]["ok"],
-                            self._sensor_status["as3935"]["ok"])
+                            self._sensor_status["as3935"]["ok"],
+                            self._sensor_status["bq24074"]["ok"])
 
             # Sleep until next tick
             elapsed = time.time() - now
@@ -141,6 +145,9 @@ class SensorPoller:
                     ch1_v=data["ch1_voltage"],
                     ch1_i=data["ch1_current"],
                     ch1_p=data["ch1_power"],
+                    ch2_v=data.get("ch2_voltage"),
+                    ch2_i=data.get("ch2_current"),
+                    ch2_p=data.get("ch2_power"),
                 )
                 self._sensor_status["ina3221"]["ok"] = True
             else:
@@ -148,6 +155,23 @@ class SensorPoller:
         except Exception as e:
             self._sensor_status["ina3221"]["last_error"] = str(e)
             logger.exception("INA3221 poll error")
+
+    def _poll_bq24074(self, now: float):
+        try:
+            data = bq24074_sensor.read_status()
+            if data is not None:
+                ts = _aligned(now, POWER_INTERVAL)
+                models.insert_bq24074_status(
+                    ts,
+                    charging=data["charging"],
+                    pgood=data["power_good"],
+                )
+                self._sensor_status["bq24074"]["ok"] = True
+            else:
+                self._sensor_status["bq24074"]["ok"] = False
+        except Exception as e:
+            self._sensor_status["bq24074"]["last_error"] = str(e)
+            logger.exception("BQ24074 poll error")
 
     def _poll_env(self, now: float):
         try:

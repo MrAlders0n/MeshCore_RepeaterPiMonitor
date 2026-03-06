@@ -89,6 +89,62 @@ var SensorCharts = (function () {
             { name: 'Load mA', color: '#ef476f' },
         ]));
 
+        // Solar Voltage (Ch2)
+        charts.solarVolt = echarts.init(elements.solarVolt);
+        charts.solarVolt.setOption(makeOption('V', [
+            { name: 'Solar V', color: '#f4a261', area: 'rgba(244,162,97,0.1)' },
+        ]));
+
+        // Solar Current (Ch2)
+        charts.solarCurr = echarts.init(elements.solarCurr);
+        charts.solarCurr.setOption(makeOption('mA', [
+            { name: 'Solar mA', color: '#e76f51' },
+        ]));
+
+        // Charger Status (BQ24074)
+        if (elements.chargerStatus) {
+            charts.chargerStatus = echarts.init(elements.chargerStatus);
+            charts.chargerStatus.setOption({
+                backgroundColor: 'transparent',
+                tooltip: TT,
+                legend: {
+                    data: ['Charging', 'Power Good'],
+                    textStyle: { fontSize: 11, color: '#aaa' },
+                    top: 0,
+                },
+                xAxis: { type: 'time', axisLine: AX.axisLine },
+                yAxis: {
+                    type: 'value', name: 'State',
+                    nameTextStyle: { color: '#888' },
+                    min: -0.1, max: 1.1,
+                    axisLine: AX.axisLine, splitLine: AX.splitLine,
+                    axisLabel: {
+                        formatter: function (v) { return v === 0 ? 'OFF' : v === 1 ? 'ON' : ''; },
+                    },
+                },
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: 0 },
+                    { type: 'slider', xAxisIndex: 0, height: 20, bottom: 5 },
+                ],
+                series: [
+                    {
+                        name: 'Charging', type: 'line', step: 'end', symbol: 'none',
+                        lineStyle: { width: 2, color: '#06d6a0' },
+                        itemStyle: { color: '#06d6a0' },
+                        areaStyle: { color: 'rgba(6,214,160,0.1)' },
+                        data: [],
+                    },
+                    {
+                        name: 'Power Good', type: 'line', step: 'end', symbol: 'none',
+                        lineStyle: { width: 2, color: '#ffd166' },
+                        itemStyle: { color: '#ffd166' },
+                        data: [],
+                    },
+                ],
+                grid: { left: 50, right: 16, top: 30, bottom: 50 },
+            });
+        }
+
         // Temperature
         charts.temp = echarts.init(elements.temp);
         charts.temp.setOption(makeOption('\u00B0C', [
@@ -152,6 +208,22 @@ var SensorCharts = (function () {
         charts.battCurr.setOption({ series: [{ data: _ts2data(data.timestamps, data.ch0_current) }] });
         charts.loadVolt.setOption({ series: [{ data: _ts2data(data.timestamps, data.ch1_voltage) }] });
         charts.loadCurr.setOption({ series: [{ data: _ts2data(data.timestamps, data.ch1_current) }] });
+        if (charts.solarVolt && data.ch2_voltage) {
+            charts.solarVolt.setOption({ series: [{ data: _ts2data(data.timestamps, data.ch2_voltage) }] });
+        }
+        if (charts.solarCurr && data.ch2_current) {
+            charts.solarCurr.setOption({ series: [{ data: _ts2data(data.timestamps, data.ch2_current) }] });
+        }
+    }
+
+    function updateBq24074(data) {
+        if (!charts.chargerStatus || !data.timestamps || !data.timestamps.length) return;
+        charts.chargerStatus.setOption({
+            series: [
+                { data: _ts2data(data.timestamps, data.charging) },
+                { data: _ts2data(data.timestamps, data.pgood) },
+            ],
+        });
     }
 
     function updateEnv(data) {
@@ -180,6 +252,7 @@ var SensorCharts = (function () {
     return {
         init: init,
         updatePower: updatePower,
+        updateBq24074: updateBq24074,
         updateEnv: updateEnv,
         updateAccel: updateAccel,
         resize: resize,
