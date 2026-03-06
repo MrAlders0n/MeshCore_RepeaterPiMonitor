@@ -87,6 +87,7 @@ var SensorCharts = (function () {
         charts.loadCurr = echarts.init(elements.loadCurr);
         charts.loadCurr.setOption(makeOption('mA', [
             { name: 'Load mA', color: '#ef476f' },
+            { name: 'Avg mA', color: '#ffd166' },
         ]));
 
         // Charge Voltage (Ch2)
@@ -226,16 +227,12 @@ var SensorCharts = (function () {
         for (var i = 0; i < data.ch1_current.length; i++) {
             if (data.ch1_current[i] != null) { loadCurrSum += data.ch1_current[i]; loadCurrCnt++; }
         }
-        var loadCurrAvg = loadCurrCnt ? loadCurrSum / loadCurrCnt : 0;
-        charts.loadCurr.setOption({ series: [{
-            data: loadCurrData,
-            markLine: {
-                silent: true,
-                symbol: 'none',
-                label: { formatter: 'Avg: {c} mA', color: '#aaa', fontSize: 10 },
-                data: [{ yAxis: Math.round(loadCurrAvg * 100) / 100, lineStyle: { color: '#ffd166', type: 'dashed', width: 1.5 } }],
-            },
-        }] });
+        var loadCurrAvg = loadCurrCnt ? Math.round(loadCurrSum / loadCurrCnt * 100) / 100 : 0;
+        var avgLine = data.timestamps.map(function (t) { return [t * 1000, loadCurrAvg]; });
+        charts.loadCurr.setOption({ series: [
+            { data: loadCurrData },
+            { data: avgLine, lineStyle: { type: 'dashed', width: 1.5 } },
+        ] });
         if (charts.solarVolt && data.ch2_voltage) {
             charts.solarVolt.setOption({ series: [{ data: _ts2data(data.timestamps, data.ch2_voltage) }] });
         }
