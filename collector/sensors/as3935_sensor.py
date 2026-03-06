@@ -125,8 +125,8 @@ class AS3935:
         afe = INDOORS_AFE if config.AS3935_AFE_MODE == "indoor" else OUTDOORS_AFE
         self._sing_reg_write(_REG_CONFIG0, 0x3E, afe << 1)
 
-        # Enable disturber reporting (clear MASK_DIST bit 5 in reg3)
-        self._sing_reg_write(_REG_CONFIG3, 0x20, 0x00)
+        # MASK_DIST bit 5 in reg3: 0x20 = mask (suppress), 0x00 = report
+        self._sing_reg_write(_REG_CONFIG3, 0x20, 0x20 if config.AS3935_MASK_DISTURBER else 0x00)
 
         # Clear IRQ output source (bits [7:6] in reg3)
         self._sing_reg_write(_REG_CONFIG3, 0xC0, 0x00)
