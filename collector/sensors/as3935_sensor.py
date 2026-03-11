@@ -37,6 +37,8 @@ _REG_ENERGY1 = 0x05
 _REG_ENERGY2 = 0x06
 _REG_DISTANCE = 0x07
 _REG_TUNE_CAP = 0x08
+_REG_TRCO_CAL = 0x3A
+_REG_SRCO_CAL = 0x3B
 _REG_CALIB = 0x3D
 
 # Interrupt sources (from register 0x03 bits [3:0])
@@ -52,6 +54,11 @@ CAPACITANCE = 96
 OUTDOORS_AFE = 0x0E
 INDOORS_AFE = 0x12
 
+# Adaptive noise floor limits
+_NF_MIN = 1
+_NF_MAX = 7
+_NF_LOWER_INTERVAL = 120  # seconds — try lowering noise floor every 2 min
+
 
 class AS3935:
     def __init__(self, irq_gpio: int = 18):
@@ -62,6 +69,8 @@ class AS3935:
         self._events: list[dict] = []
         self._lock = threading.Lock()
         self._available = False
+        self._noise_floor: int = config.AS3935_NOISE_FLOOR
+        self._last_nf_lower: float = 0.0
 
     @property
     def available(self) -> bool:
@@ -161,6 +170,52 @@ class AS3935:
         # Clear SRCO display
         self._sing_reg_write(_REG_TUNE_CAP, 0x40, 0x00)
 
+        # Verify RCO calibration
+        trco = self._read_reg(_REG_TRCO_CAL)
+        srco = self._read_reg(_REG_SRCO_CAL)
+        trco_ok = bool(trco & 0x80) and not bool(trco & 0x40)
+        srco_ok = bool(srco & 0x80) and not bool(srco & 0x40)
+        if not trco_ok or not srco_ok:
+            logger.warning("AS3935 RCO calibration issue — TRCO_OK=%s SRCO_OK=%s", trco_ok, srco_ok)
+        else:
+            logger.debug("AS3935 RCO calibration OK")
+
+        # Clear distance estimation statistics for a fresh start
+        self._clear_statistics()
+
+    def _clear_statistics(self):
+        """Toggle CL_STAT bit to reset internal distance algorithm."""
+        self._sing_reg_write(_REG_CONFIG2, 0x40, 0x40)
+        self._sing_reg_write(_REG_CONFIG2, 0x40, 0x00)
+        self._sing_reg_write(_REG_CONFIG2, 0x40, 0x40)
+
+    def _raise_noise_floor(self):
+        """Raise noise floor by one level (called on INT_NH)."""
+        if self._noise_floor < _NF_MAX:
+            self._noise_floor += 1
+            self._sing_reg_write(_REG_CONFIG1, 0x70, self._noise_floor << 4)
+            logger.info("AS3935 noise floor raised to %d", self._noise_floor)
+            self._clear_statistics()
+
+    def _lower_noise_floor(self):
+        """Lower noise floor by one level (called periodically)."""
+        if self._noise_floor > _NF_MIN:
+            self._noise_floor -= 1
+            self._sing_reg_write(_REG_CONFIG1, 0x70, self._noise_floor << 4)
+            logger.info("AS3935 noise floor lowered to %d", self._noise_floor)
+
+    def maybe_lower_noise_floor(self):
+        """Called from poller loop — lowers noise floor every 2 min if quiet."""
+        if not self._available:
+            return
+        now = time.time()
+        if now - self._last_nf_lower >= _NF_LOWER_INTERVAL:
+            self._last_nf_lower = now
+            try:
+                self._lower_noise_floor()
+            except Exception:
+                logger.exception("AS3935 lower noise floor error")
+
     def _setup_irq(self):
         if _GPIO_LIB == "lgpio":
             h = lgpio.gpiochip_open(0)
@@ -218,7 +273,7 @@ class AS3935:
                 logger.debug("AS3935 disturber event")
             elif int_src == INT_NOISE:
                 event["event_type"] = 3
-                logger.debug("AS3935 noise event")
+                self._raise_noise_floor()
             else:
                 return
 

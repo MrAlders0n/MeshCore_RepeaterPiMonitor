@@ -39,8 +39,8 @@ SENSOR_POLL_ENABLED = os.environ.get("MESHCORE_SENSOR_POLL", "1") != "0"
 AS3935_IRQ_GPIO = int(os.environ.get("MESHCORE_AS3935_IRQ_GPIO", "18"))
 AS3935_AFE_MODE = os.environ.get("MESHCORE_AS3935_AFE_MODE", "outdoor")  # "indoor" or "outdoor"
 AS3935_NOISE_FLOOR = int(os.environ.get("MESHCORE_AS3935_NOISE_FLOOR", "3"))  # 0-7
-AS3935_WATCHDOG = int(os.environ.get("MESHCORE_AS3935_WATCHDOG", "5"))  # 0-15
-AS3935_SPIKE_REJECTION = int(os.environ.get("MESHCORE_AS3935_SPIKE_REJECTION", "5"))  # 0-15
+AS3935_WATCHDOG = int(os.environ.get("MESHCORE_AS3935_WATCHDOG", "3"))  # 0-15
+AS3935_SPIKE_REJECTION = int(os.environ.get("MESHCORE_AS3935_SPIKE_REJECTION", "3"))  # 0-15
 AS3935_MASK_DISTURBER = os.environ.get("MESHCORE_AS3935_MASK_DIST", "1") == "1"  # mask disturber events
 AS3935_MIN_STRIKES = int(os.environ.get("MESHCORE_AS3935_MIN_STRIKES", "5"))  # 1,5,9,16
 AS3935_MIN_DISTANCE = int(os.environ.get("MESHCORE_AS3935_MIN_DISTANCE", "2"))  # km, filter out <= this

@@ -113,8 +113,9 @@ class SensorPoller:
                 self._poll_env(now)
                 last_env = now
 
-            # AS3935 — drain events every tick
+            # AS3935 — drain events every tick, adaptive noise floor
             self._store_lightning_events()
+            self._as3935.maybe_lower_noise_floor()
 
             # Log summary every 5 minutes
             cycle += 1
