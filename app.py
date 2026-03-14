@@ -46,6 +46,15 @@ def create_app() -> Flask:
         if request.endpoint in ("login", "static"):
             return None
 
+        # Allow the dashboard page without auth (public read-only)
+        if request.endpoint == "index" and request.method == "GET":
+            return None
+
+        # Allow read-only GET API requests without auth
+        if request.path.startswith("/api/") and request.method == "GET":
+            return None
+
+        # All other requests (POST/PUT/DELETE, WebSocket) require auth
         if session.get("authenticated"):
             return None
 
@@ -61,19 +70,20 @@ def create_app() -> Flask:
         if request.method == "POST":
             if request.form.get("password") == config.PASSWORD:
                 session["authenticated"] = True
-                return redirect(url_for("index"))
+                return redirect(url_for("index", tab="admin"))
             error = "Invalid password"
         return render_template("login.html", error=error)
 
     @app.route("/logout")
     def logout():
         session.clear()
-        return redirect(url_for("login"))
+        return redirect(url_for("index"))
 
     # Root route serves dashboard
     @app.route("/")
     def index():
-        return render_template("index.html", auth_enabled=bool(config.PASSWORD))
+        is_admin = not config.PASSWORD or session.get("authenticated", False)
+        return render_template("index.html", auth_enabled=bool(config.PASSWORD), is_admin=is_admin)
 
     # Start collector
     poller = StatsPoller()

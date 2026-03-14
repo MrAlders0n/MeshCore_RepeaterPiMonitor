@@ -23,7 +23,14 @@
             <h1>RepeaterWatch</h1>
         </div>
         {% if auth_enabled %}
-        <a href="/logout" class="logout-btn">Logout</a>
+        <div class="header-actions">
+            {% if is_admin %}
+            <button id="admin-btn" class="admin-btn">Admin</button>
+            <a href="/logout" class="logout-btn">Logout</a>
+            {% else %}
+            <a href="/login" class="admin-btn">Admin</a>
+            {% endif %}
+        </div>
         {% endif %}
     </header>
 
@@ -32,8 +39,9 @@
         <button class="tab-btn active" data-tab="meshcore">MeshCore</button>
         <button class="tab-btn" data-tab="raspberry-pi">Raspberry Pi</button>
         <button class="tab-btn" data-tab="sensors">Sensors</button>
-        <button class="tab-btn" data-tab="tools">Tools</button>
-        <button class="tab-btn" data-tab="settings">Settings</button>
+        {% if not auth_enabled %}
+        <button class="tab-btn" data-tab="admin">Admin</button>
+        {% endif %}
     </nav>
 
     <!-- Tab: MeshCore -->
@@ -433,8 +441,10 @@
         </div>
     </div>
 
-    <!-- Tab: Tools -->
-    <div id="tab-tools" class="tab-panel">
+    {% if is_admin %}
+    <!-- Tab: Admin (Tools + Settings) -->
+    <div id="tab-admin" class="tab-panel">
+        <h2 class="admin-section-title">Tools</h2>
         <div class="tools-grid">
             <!-- Flash Firmware Card -->
             <div class="tool-card tool-card-wide">
@@ -573,10 +583,8 @@
                 <div id="terminal-status" class="terminal-status"></div>
             </div>
         </div>
-    </div>
 
-    <!-- Tab: Settings -->
-    <div id="tab-settings" class="tab-panel">
+        <h2 class="admin-section-title">Settings</h2>
         <div class="settings-grid">
             <div class="tool-card settings-card">
                 <div class="tool-card-header">
@@ -658,8 +666,9 @@
                     <span id="db-reset-status" class="settings-save-status"></span>
                 </div>
             </div>
-        </div><!-- .settings-grid -->
+        </div>
     </div>
+    {% endif %}
 
     <!-- Footer -->
     <footer id="footer">
