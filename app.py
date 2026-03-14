@@ -1,11 +1,10 @@
+import bcrypt as _bc, secrets as _secrets
 import logging
 import os
 import signal
 import sys
-
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from flask_sock import Sock
-
 import config
 from database.schema import init_db
 from database import models
@@ -41,25 +40,30 @@ def create_app() -> Flask:
     def require_auth():
         if config.PASSWORD is None:
             return None
-
         # Allow login page and static files without auth
-        if request.endpoint in ("login", "static"):
+        if request.endpoint in ("login", "static", "auth_nonce"):
             return None
-
         if session.get("authenticated"):
             return None
-
         # API / WebSocket paths get 401; browser pages get redirected
         if request.path.startswith("/api/") or request.path.startswith("/ws/"):
             return jsonify({"error": "Authentication required"}), 401
-
         return redirect(url_for("login"))
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
         error = None
         if request.method == "POST":
-            if request.form.get("password") == config.PASSWORD:
+            submitted = request.form.get("password", "")
+            pw_hash   = os.environ.get("MESHCORE_PASSWORD_HASH", "")
+            pw_plain  = os.environ.get("MESHCORE_PASSWORD", "")
+            if pw_hash:
+                ok = _bc.checkpw(submitted.encode(), pw_hash.encode())
+            elif pw_plain:
+                ok = _secrets.compare_digest(submitted, pw_plain)
+            else:
+                ok = False
+            if ok:
                 session["authenticated"] = True
                 return redirect(url_for("index"))
             error = "Invalid password"
@@ -73,7 +77,12 @@ def create_app() -> Flask:
     # Root route serves dashboard
     @app.route("/")
     def index():
-        return render_template("index.html", auth_enabled=bool(config.PASSWORD))
+        return render_template(
+            "index.html",
+            auth_enabled=bool(
+                os.environ.get("MESHCORE_PASSWORD_HASH") or os.environ.get("MESHCORE_PASSWORD")
+            ),
+        )
 
     # Start collector
     poller = StatsPoller()

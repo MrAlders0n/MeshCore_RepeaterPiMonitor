@@ -147,6 +147,7 @@
         document.getElementById('pi-hostname').textContent = p.hostname || p.node || '--';
         document.getElementById('pi-os-version').textContent = (p.system || '--') + ' ' + (p.release || '');
         document.getElementById('pi-model').textContent = p.machine || '--';
+        document.getElementById('pi-python') && (document.getElementById('pi-python').textContent = p.python || '--');
     }
 
     function renderPiProcesses(procs) {
@@ -328,11 +329,9 @@
                 var tabId = btn.getAttribute('data-tab');
                 if (tabId === activeTab) return;
 
-                // Update button states
                 tabBtns.forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
 
-                // Update panel states
                 document.querySelectorAll('.tab-panel').forEach(function (p) {
                     p.classList.remove('active');
                 });
@@ -409,10 +408,20 @@
         var h = currentHours;
 
         fetchJSON('/api/v1/device').then(function (d) {
-            document.getElementById('mc-radio-name').textContent = d.name || '--';
-            document.getElementById('mc-firmware').textContent = d.firmware || '--';
-            document.getElementById('mc-board').textContent = d.board || '--';
-            document.getElementById('mc-radio-config').textContent = d.radio_config || '';
+            document.getElementById('di-name').textContent = d.name || '--';
+            document.getElementById('di-hardware') && (document.getElementById('di-hardware').textContent = d.hardware || '--');
+            (function(fw) {
+                document.getElementById('di-firmware').textContent = fw ? fw.replace(/(-.{7})? .*$/, '') : '--';
+            })(d.firmware);
+
+            (function(rc) {
+                var parts = (rc || '').split(',');
+                var freq = parseFloat(parts[0]);
+                document.getElementById('di-freq').textContent = freq ? freq.toFixed(3) + ' MHz' : '--';
+                document.getElementById('di-bw').textContent  = parts[1] ? parts[1] + ' kHz' : '--';
+                document.getElementById('di-sf').textContent  = parts[2] ? parts[2] : '--';
+                document.getElementById('di-cr').textContent  = parts[3] ? parts[3] : '--';
+            })(d.radio_config);
             document.getElementById('mc-uptime-val').textContent = formatUptime(d.uptime_secs);
             NeighborMap.setRepeaterInfo(d);
         }).catch(noop);
@@ -703,7 +712,6 @@
 
             flashBtn.disabled = true;
 
-            // Open the modal
             document.getElementById('fw-modal-overlay').style.display = 'flex';
             document.getElementById('fw-modal-log').textContent = '';
             document.getElementById('fw-modal-footer').style.display = 'none';
@@ -727,7 +735,6 @@
                 });
         });
 
-        // Modal close handler
         document.getElementById('fw-modal-close').addEventListener('click', function () {
             document.getElementById('fw-modal-overlay').style.display = 'none';
         });
@@ -846,7 +853,6 @@
             deviceList.innerHTML = '';
         }
 
-        // Get initial state
         fetchJSON('/api/v1/radio/usb').then(function (d) {
             updateBtn(d.enabled);
             if (!d.enabled) hideDevice();
@@ -959,7 +965,6 @@
                 } else {
                     uptimeEl.textContent = svc.active ? '--' : 'stopped';
                 }
-                // Toggle Start/Stop/Restart visibility based on state
                 var startBtn = row.querySelector('.start-btn');
                 var stopBtn = row.querySelector('.stop-btn');
                 var restartBtn = row.querySelector('.restart-btn');
@@ -1000,7 +1005,6 @@
                     clearInterval(fwPollTimer);
                     fwPollTimer = null;
                 }
-                // Show modal close button and re-enable flash button
                 document.getElementById('fw-modal-footer').style.display = '';
                 document.getElementById('fw-flash-btn').disabled = false;
                 document.getElementById('fw-sha256').value = '';
@@ -1163,7 +1167,6 @@
         var saveBtn = document.getElementById('settings-save-btn');
         var statusEl = document.getElementById('settings-save-status');
 
-        // Toggle radio buttons
         sourceBtns.forEach(function (btn) {
             btn.addEventListener('click', function () {
                 sourceBtns.forEach(function (b) { b.classList.remove('active'); });
@@ -1173,7 +1176,6 @@
             });
         });
 
-        // Save handler
         saveBtn.addEventListener('click', function () {
             var powerSource = 'ina3221';
             sourceBtns.forEach(function (btn) {
@@ -1205,7 +1207,6 @@
                     applyPowerSettings(appSettings);
                     statusEl.textContent = 'Saved';
                     statusEl.className = 'settings-save-status success';
-                    // Refresh charts with new settings
                     if (chartsInitialized) {
                         refreshMeshCore();
                     }
@@ -1223,7 +1224,6 @@
             });
         });
 
-        // Firmware settings save handler
         var fwSaveBtn = document.getElementById('fw-settings-save-btn');
         var fwStatusEl = document.getElementById('fw-settings-save-status');
         var flashPortInput = document.getElementById('flash-serial-port');
@@ -1261,7 +1261,6 @@
             });
         });
 
-        // Database reset handler
         var dbResetBtn = document.getElementById('db-reset-btn');
         var dbStatusEl = document.getElementById('db-reset-status');
 
@@ -1322,7 +1321,6 @@
             populateSettingsForm(settings);
             applyPowerSettings(settings);
         }).catch(function () {
-            // Use defaults on error
             applyPowerSettings(appSettings);
         });
     }
@@ -1366,7 +1364,6 @@
     setupTerminal();
     setupSettings();
 
-    // Load settings first, then do initial refresh
     loadSettings().then(function () {
         refreshAll();
     });
