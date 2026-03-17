@@ -27,7 +27,11 @@
             <h1>RepeaterWatch</h1>
         </div>
         {% if auth_enabled %}
+        {% if is_authenticated %}
         <a href="/logout" class="logout-btn">Logout</a>
+        {% else %}
+        <a href="/login" class="logout-btn">Login</a>
+        {% endif %}
         {% endif %}
     </header>
 
@@ -36,8 +40,10 @@
         <button class="tab-btn active" data-tab="meshcore">MeshCore</button>
         <button class="tab-btn" data-tab="raspberry-pi">Raspberry Pi</button>
         <button class="tab-btn" data-tab="sensors">Sensors</button>
+        {% if not auth_enabled or is_authenticated %}
         <button class="tab-btn" data-tab="tools">Tools</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
+        {% endif %}
     </nav>
 
     <!-- ══════════════════════════════════════════
@@ -178,6 +184,12 @@
                         <tbody id="neighbors-tbody"></tbody>
                     </table>
                 </div>
+                {% if not auth_enabled or is_authenticated %}
+                <div style="text-align:center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);">
+                    <button id="neighbors-delete-btn" class="danger-btn">Delete Old Neighbours</button>
+                    <span id="neighbors-delete-status" class="settings-save-status" style="display:block; margin-top:6px;"></span>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -329,17 +341,23 @@
         <div class="sensor-config-bar">
             <span id="sensor-poll-status" class="sensor-poll-badge sensor-poll-off">Polling Off</span>
             <span id="sensor-active-count" class="sensor-active-count">No sensors enabled</span>
+            {% if not auth_enabled or is_authenticated %}
             <button id="sensor-manage-btn" class="sensor-manage-btn">&#x2B; Manage Sensors</button>
+            {% endif %}
         </div>
 
         <!-- Empty state — shown when no sensors enabled -->
         <div id="sensor-empty-state" class="sensor-empty-state" style="display:none;">
             <div class="sensor-empty-icon">&#x1F4E1;</div>
             <h3>No Sensors Enabled</h3>
+            {% if not auth_enabled or is_authenticated %}
             <p>Click <strong>Manage Sensors</strong> to enable connected hardware.</p>
             <button class="sensor-manage-btn-lg" onclick="document.getElementById('sensor-manage-btn').click()">
                 &#x2B; Add a Sensor
             </button>
+            {% else %}
+            <p>Login as Admin to enable sensors.</p>
+            {% endif %}
         </div>
 
         <!-- Time range — hidden until at least one sensor enabled -->
@@ -500,8 +518,9 @@
     </div><!-- /tab-sensors -->
 
     <!-- ══════════════════════════════════════════
-         Manage Sensors Modal
+         Manage Sensors Modal (admin only)
     ══════════════════════════════════════════ -->
+    {% if not auth_enabled or is_authenticated %}
     <div id="sensor-modal-overlay" class="sensor-modal-overlay" style="display:none;">
         <div class="sensor-modal">
             <div class="sensor-modal-header">
@@ -590,11 +609,24 @@
             </div>
         </div>
     </div>
+    {% endif %}<!-- /sensor modal auth gate -->
 
     <!-- ══════════════════════════════════════════
          Tab: Tools
     ══════════════════════════════════════════ -->
     <div id="tab-tools" class="tab-panel">
+
+        {% if auth_enabled and not is_authenticated %}
+        <div class="admin-login-gate">
+            <div class="admin-login-box">
+                <div class="admin-login-icon">&#x1F512;</div>
+                <h2>Login Required</h2>
+                <p>Tools require authentication.</p>
+                <a href="/login" class="save-btn" style="display:inline-block; text-decoration:none; margin-top:8px;">Login</a>
+            </div>
+        </div>
+        {% else %}
+
         <div class="tools-grid">
 
             <!-- Flash Firmware -->
@@ -679,8 +711,8 @@
                 <div id="usb-device-list" class="usb-device-list" style="display:none;"></div>
             </div>
 
-            <!-- BQ24074 Charger -->
-            <div class="tool-card tool-card-bq24074">
+            <!-- BQ24074 Charger — only shown when BQ24074 sensor is enabled -->
+            <div class="tool-card tool-card-bq24074" id="tools-bq24074-card" style="display:none;">
                 <div class="tool-card-header">
                     <span class="tool-icon">&#x1F50B;</span>
                     <h3>BQ24074 Charger</h3>
@@ -697,7 +729,7 @@
                     </div>
                 </div>
                 <div class="card-actions">
-                    <button id="bq24074-toggle-btn" class="reboot-btn">Disable Charging</button>
+                    <button id="bq24074-toggle-btn" class="reboot-btn">Enable Charging</button>
                     <span id="bq24074-status-msg" class="settings-save-status"></span>
                 </div>
             </div>
@@ -724,7 +756,7 @@
                 <div class="terminal-controls">
                     <div class="terminal-mode-selector">
                         <button class="terminal-mode-btn active" data-mode="pty">Pi Console</button>
-                        <button class="terminal-mode-btn" data-mode="serial">Serial ttyV2</button>
+                        <button class="terminal-mode-btn" data-mode="serial">Repeater CLI</button>
                     </div>
                     <button id="terminal-connect-btn" class="terminal-connect-btn">Connect</button>
                 </div>
@@ -734,13 +766,28 @@
                 <div id="terminal-status" class="terminal-status"></div>
             </div>
 
-        </div>
+        </div><!-- /tools-grid -->
+
+        {% endif %}<!-- /auth gate -->
+
     </div><!-- /tab-tools -->
 
     <!-- ══════════════════════════════════════════
          Tab: Settings
     ══════════════════════════════════════════ -->
     <div id="tab-settings" class="tab-panel">
+
+        {% if auth_enabled and not is_authenticated %}
+        <div class="admin-login-gate">
+            <div class="admin-login-box">
+                <div class="admin-login-icon">&#x1F512;</div>
+                <h2>Login Required</h2>
+                <p>Settings require authentication.</p>
+                <a href="/login" class="save-btn" style="display:inline-block; text-decoration:none; margin-top:8px;">Login</a>
+            </div>
+        </div>
+        {% else %}
+
         <div class="settings-grid">
 
             <div class="tool-card settings-card">
@@ -808,7 +855,10 @@
                 </div>
             </div>
 
-        </div>
+        </div><!-- /settings-grid -->
+
+        {% endif %}<!-- /auth gate -->
+
     </div><!-- /tab-settings -->
 
     <!-- Footer -->

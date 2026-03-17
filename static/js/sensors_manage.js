@@ -54,6 +54,10 @@
         var timeNav    = el('sensor-time-nav');
         if (emptyState) emptyState.style.display = enabledCount === 0 ? '' : 'none';
         if (timeNav)    timeNav.style.display    = enabledCount === 0 ? 'none' : '';
+
+        // Show BQ24074 tool card on Tools tab only when sensor is enabled
+        var bq24074ToolCard = el('tools-bq24074-card');
+        if (bq24074ToolCard) bq24074ToolCard.style.display = _config.bq24074 ? '' : 'none';
     }
 
     function loadSensorConfig() {

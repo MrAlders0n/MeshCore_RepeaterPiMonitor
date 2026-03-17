@@ -42,6 +42,16 @@
     --pad-sm:      12px;
 }
 
+[data-theme="light"] header {
+    border-bottom-color: rgba(0, 119, 182, 0.2);
+}
+
+[data-theme="light"] header,
+[data-theme="light"] .header-info h1,
+[data-theme="light"] .logout-btn {
+    color: #fff;
+}
+
 [data-theme="light"] {
     --bg:          #f2f5f9;
     --bg-card:     #ffffff;
@@ -92,6 +102,7 @@ header {
     top: 0;
     z-index: 100;
     border-bottom: 1px solid rgba(0, 212, 255, 0.08);
+    color: #fff;
 }
 
 .header-info {
@@ -106,7 +117,7 @@ header {
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #fff;
+    color: #fff !important;
     white-space: nowrap;
 }
 
@@ -205,8 +216,6 @@ header {
     color: var(--accent);
     border-bottom-color: var(--accent);
 }
-
-/* ── Tab Panels ────────────────────────────────────────────── */
 .tab-panel          { display: none; }
 .tab-panel.active   { display: block; }
 
@@ -1091,7 +1100,60 @@ td.dir-rx { color: var(--green); }
 .settings-save-status.success { color: var(--green); }
 .settings-save-status.error   { color: var(--red); }
 
-/* ── Footer ────────────────────────────────────────────────── */
+/* ── Admin Tab ─────────────────────────────────────────────── */
+.admin-section-header {
+    padding: 16px var(--pad) 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+}
+
+.admin-section-header h2 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+.admin-section-header + .settings-grid {
+    padding-top: 16px;
+}
+
+.admin-login-gate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px var(--pad);
+}
+
+.admin-login-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px 48px;
+    text-align: center;
+    max-width: 340px;
+    width: 100%;
+}
+
+.admin-login-icon {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+    opacity: 0.7;
+}
+
+.admin-login-box h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.admin-login-box p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
 footer {
     background: var(--bg-card);
     border-top: 1px solid var(--border);

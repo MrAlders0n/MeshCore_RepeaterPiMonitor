@@ -15,7 +15,7 @@ Enhancements to [RepeaterWatch](https://github.com/MrAlders0n/RepeaterWatch) dev
 | `api/routes.py` | All API routes including sensor config, hardware field, RX error fix |
 | `static/css/dashboard.css` | Fully responsive dark/light theme (DM Sans + JetBrains Mono) |
 | `static/js/dashboard.js` | Dashboard JS — device info card, all tab logic |
-| `static/js/sensors_manage.js` | Sensor config modal + dynamic section visibility |
+| `collector/firmware_flasher.py` | Fixed DFU port detection for XIAO bootloader USB name change; dynamic nrfutil path |
 | `templates/index.html` | Full responsive dashboard template |
 | `.env.example` | All supported environment variables |
 
@@ -52,24 +52,26 @@ Dashboard available at `http://<pi-ip>:5000`
 Copy modified files individually, then restart:
 
 ```bash
-sudo cp app.py                      /opt/RepeaterWatch/app.py
-sudo cp setup_auth.py               /opt/RepeaterWatch/setup_auth.py
-sudo cp api/routes.py               /opt/RepeaterWatch/api/routes.py
-sudo cp templates/index.html        /opt/RepeaterWatch/templates/index.html
-sudo cp static/css/dashboard.css    /opt/RepeaterWatch/static/css/dashboard.css
-sudo cp static/js/dashboard.js      /opt/RepeaterWatch/static/js/dashboard.js
-sudo cp static/js/sensors_manage.js /opt/RepeaterWatch/static/js/sensors_manage.js
+sudo cp app.py                                  /opt/RepeaterWatch/app.py
+sudo cp setup_auth.py                           /opt/RepeaterWatch/setup_auth.py
+sudo cp api/routes.py                           /opt/RepeaterWatch/api/routes.py
+sudo cp collector/firmware_flasher.py           /opt/RepeaterWatch/collector/firmware_flasher.py
+sudo cp templates/index.html                    /opt/RepeaterWatch/templates/index.html
+sudo cp static/css/dashboard.css               /opt/RepeaterWatch/static/css/dashboard.css
+sudo cp static/js/dashboard.js                 /opt/RepeaterWatch/static/js/dashboard.js
+sudo cp static/js/sensors_manage.js            /opt/RepeaterWatch/static/js/sensors_manage.js
 
 sudo chown -R meshcoremon:meshcoremon \
     /opt/RepeaterWatch/app.py \
     /opt/RepeaterWatch/api/routes.py \
     /opt/RepeaterWatch/setup_auth.py \
+    /opt/RepeaterWatch/collector/firmware_flasher.py \
     /opt/RepeaterWatch/static/css/dashboard.css \
     /opt/RepeaterWatch/static/js/dashboard.js \
     /opt/RepeaterWatch/static/js/sensors_manage.js \
     /opt/RepeaterWatch/templates/index.html
 
-sudo /opt/RepeaterWatch/venv/bin/pip install bcrypt
+sudo /opt/RepeaterWatch/venv/bin/pip install bcrypt adafruit-nrfutil
 sudo systemctl restart RepeaterWatch
 ```
 

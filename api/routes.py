@@ -692,6 +692,14 @@ def database_reset():
     return jsonify({"status": "ok"})
 
 
+@api.route("/neighbors/delete", methods=["POST"])
+def neighbors_delete():
+    conn = models._conn()
+    conn.execute("DELETE FROM neighbors")
+    conn.commit()
+    return jsonify({"status": "ok"})
+
+
 @api.route("/radio/usb")
 def radio_usb_status():
     pin = config.USB_RELAY_GPIO_PIN

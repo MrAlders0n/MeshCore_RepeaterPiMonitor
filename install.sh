@@ -189,17 +189,18 @@ info "Creating Python virtualenv..."
 python3 -m venv "$RW_DIR/venv"
 "$RW_DIR/venv/bin/pip" install --quiet --upgrade pip
 "$RW_DIR/venv/bin/pip" install --quiet -r "$RW_DIR/requirements.txt"
-"$RW_DIR/venv/bin/pip" install --quiet bcrypt
+"$RW_DIR/venv/bin/pip" install --quiet bcrypt adafruit-nrfutil
 
 # Copy contrib files over the cloned repo
 info "Applying contrib files..."
-cp "$SCRIPT_DIR/app.py"                       "$RW_DIR/app.py"
-cp "$SCRIPT_DIR/setup_auth.py"                "$RW_DIR/setup_auth.py"
-cp "$SCRIPT_DIR/api/routes.py"                "$RW_DIR/api/routes.py"
-cp "$SCRIPT_DIR/templates/index.html"         "$RW_DIR/templates/index.html"
-cp "$SCRIPT_DIR/static/css/dashboard.css"     "$RW_DIR/static/css/dashboard.css"
-cp "$SCRIPT_DIR/static/js/dashboard.js"       "$RW_DIR/static/js/dashboard.js"
-cp "$SCRIPT_DIR/static/js/sensors_manage.js"  "$RW_DIR/static/js/sensors_manage.js"
+cp "$SCRIPT_DIR/app.py"                                    "$RW_DIR/app.py"
+cp "$SCRIPT_DIR/setup_auth.py"                             "$RW_DIR/setup_auth.py"
+cp "$SCRIPT_DIR/api/routes.py"                             "$RW_DIR/api/routes.py"
+cp "$SCRIPT_DIR/collector/firmware_flasher.py"             "$RW_DIR/collector/firmware_flasher.py"
+cp "$SCRIPT_DIR/templates/index.html"                      "$RW_DIR/templates/index.html"
+cp "$SCRIPT_DIR/static/css/dashboard.css"                  "$RW_DIR/static/css/dashboard.css"
+cp "$SCRIPT_DIR/static/js/dashboard.js"                    "$RW_DIR/static/js/dashboard.js"
+cp "$SCRIPT_DIR/static/js/sensors_manage.js"               "$RW_DIR/static/js/sensors_manage.js"
 success "Contrib files applied"
 
 # .env — only create if it doesn't exist

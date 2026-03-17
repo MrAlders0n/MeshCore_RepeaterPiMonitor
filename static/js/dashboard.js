@@ -384,7 +384,11 @@
     function fetchJSON(url) {
         return fetch(url).then(function (r) {
             if (r.status === 401) {
-                window.location.href = '/login';
+                // On write operations from admin tab, redirect to login
+                // On read operations from public tabs, just fail silently
+                if (activeTab === 'admin') {
+                    window.location.href = '/login';
+                }
                 throw new Error('Unauthorized');
             }
             if (!r.ok) throw new Error(r.status);
@@ -411,7 +415,7 @@
             document.getElementById('di-name').textContent = d.name || '--';
             document.getElementById('di-hardware') && (document.getElementById('di-hardware').textContent = d.hardware || '--');
             (function(fw) {
-                document.getElementById('di-firmware').textContent = fw ? fw.replace(/(-.{7})? .*$/, '') : '--';
+                document.getElementById('di-firmware').textContent = fw ? fw.replace(/^(\d+\.\d+\.\d+).*$/, '$1') : '--';
             })(d.firmware);
 
             (function(rc) {
@@ -895,7 +899,7 @@
         });
     }
 
-    var bq24074ChargingEnabled = true;
+    var bq24074ChargingEnabled = false;
 
     function setupBq24074Tool() {
         var btn = document.getElementById('bq24074-toggle-btn');
@@ -1100,7 +1104,7 @@
             terminalConnected = true;
             connectBtn.textContent = 'Disconnect';
             connectBtn.classList.add('connected');
-            statusEl.textContent = 'Connected (' + (terminalMode === 'pty' ? 'Pi Console' : 'Serial ttyV2') + ')';
+            statusEl.textContent = 'Connected (' + (terminalMode === 'pty' ? 'Pi Console' : 'Repeater CLI') + ')';
             statusEl.className = 'terminal-status connected';
             modeBtns.forEach(function (b) { b.disabled = true; });
             terminalInstance.focus();
@@ -1294,6 +1298,35 @@
                 setTimeout(function () { dbStatusEl.textContent = ''; }, 3000);
             });
         });
+
+        var nbDeleteBtn = document.getElementById('neighbors-delete-btn');
+        var nbStatusEl = document.getElementById('neighbors-delete-status');
+
+        nbDeleteBtn.addEventListener('click', function () {
+            if (!confirm('Delete all stored neighbours? They will reappear as the repeater hears them.')) return;
+            nbDeleteBtn.disabled = true;
+            nbStatusEl.textContent = 'Deleting...';
+            nbStatusEl.className = 'settings-save-status';
+            fetch('/api/v1/neighbors/delete', { method: 'POST' })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+            .then(function (resp) {
+                nbDeleteBtn.disabled = false;
+                if (resp.ok) {
+                    nbStatusEl.textContent = 'Done — neighbours cleared';
+                    nbStatusEl.className = 'settings-save-status success';
+                } else {
+                    nbStatusEl.textContent = resp.data.error || 'Failed';
+                    nbStatusEl.className = 'settings-save-status error';
+                }
+                setTimeout(function () { nbStatusEl.textContent = ''; }, 3000);
+            })
+            .catch(function () {
+                nbDeleteBtn.disabled = false;
+                nbStatusEl.textContent = 'Network error';
+                nbStatusEl.className = 'settings-save-status error';
+                setTimeout(function () { nbStatusEl.textContent = ''; }, 3000);
+            });
+        });
     }
 
     function populateSettingsForm(settings) {
@@ -1301,6 +1334,9 @@
         var channelSection = document.getElementById('ina-channel-settings');
         var solarSelect = document.getElementById('ina-solar-ch');
         var repeaterSelect = document.getElementById('ina-repeater-ch');
+
+        // Elements only exist when admin tab is rendered (authenticated)
+        if (!channelSection || !solarSelect || !repeaterSelect) return;
 
         sourceBtns.forEach(function (btn) {
             btn.classList.toggle('active', btn.getAttribute('data-value') === settings.power_source);
@@ -1355,14 +1391,16 @@
     setupPiTimeButtons();
     setupSensorTimeButtons();
     setupThemeToggle();
-    setupMapFullscreen();
-    setupFirmwareFlash();
-    setupRebootRadio();
-    setupUsbRelay();
-    setupServices();
-    setupBq24074Tool();
-    setupTerminal();
-    setupSettings();
+
+    // Admin-only setup — elements only exist when authenticated
+    if (document.getElementById('map-fullscreen'))   setupMapFullscreen();
+    if (document.getElementById('fw-flash-btn'))     setupFirmwareFlash();
+    if (document.getElementById('reboot-radio-btn')) setupRebootRadio();
+    if (document.getElementById('usb-relay-btn'))    setupUsbRelay();
+    if (document.querySelector('.svc-btn'))          setupServices();
+    if (document.getElementById('bq24074-toggle-btn')) setupBq24074Tool();
+    if (document.getElementById('terminal-connect-btn')) setupTerminal();
+    if (document.getElementById('settings-save-btn')) setupSettings();
 
     loadSettings().then(function () {
         refreshAll();
