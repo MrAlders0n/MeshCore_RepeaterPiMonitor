@@ -123,9 +123,14 @@ class StatsPoller:
         # stats-radio
         data = self.reader.send_command_json("stats-radio")
         if data:
+            # AGC resets in firmware 1.14.x briefly zero out the noise floor
+            # register (0x0000 → 0 dBm).  A real 0 dBm reading is physically
+            # impossible on LoRa hardware, so treat it as missing data.
+            raw_nf = data.get("noise_floor")
+            noise_floor = raw_nf if raw_nf is not None and raw_nf != 0 else None
             models.insert_stats_radio(
                 ts,
-                noise_floor=data.get("noise_floor"),
+                noise_floor=noise_floor,
                 tx_air_secs=data.get("tx_air_secs"),
                 rx_air_secs=data.get("rx_air_secs"),
                 last_rssi=data.get("last_rssi"),
