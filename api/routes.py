@@ -37,7 +37,6 @@ def device_info():
     core = models.query_stats_core(hours=1)
     uptime = core[-1]["uptime_secs"] if core else None
     pk = info.get("public_key", "")
-    # pubkey_prefix: first 4 hex chars (2 bytes) for map label
     pubkey_prefix = pk[:4].upper() if pk else ""
     lat = None
     lon = None
@@ -56,6 +55,7 @@ def device_info():
         "lat": lat,
         "lon": lon,
         "uptime_secs": uptime,
+        "hardware": os.environ.get("MESHCORE_HARDWARE", ""),
     })
 
 
@@ -102,13 +102,13 @@ def stats_power():
         "timestamps": [r["ts"] for r in rows],
         "ch0_voltage": [r["ch0_voltage"] for r in rows],
         "ch0_current": [r["ch0_current"] for r in rows],
-        "ch0_power": [r["ch0_power"] for r in rows],
+        "ch0_power":   [r["ch0_power"] for r in rows],
         "ch1_voltage": [r["ch1_voltage"] for r in rows],
         "ch1_current": [r["ch1_current"] for r in rows],
-        "ch1_power": [r["ch1_power"] for r in rows],
+        "ch1_power":   [r["ch1_power"] for r in rows],
         "ch2_voltage": [r["ch2_voltage"] for r in rows],
         "ch2_current": [r["ch2_current"] for r in rows],
-        "ch2_power": [r["ch2_power"] for r in rows],
+        "ch2_power":   [r["ch2_power"] for r in rows],
     })
 
 
@@ -128,56 +128,63 @@ def packets_activity():
     bucket = request.args.get("bucket_minutes", 15, type=int)
     rows = models.query_packets_activity(h, bucket)
 
-    # If packet_log has no data, fall back to stats_packets deltas
     if not rows:
         rows = models.query_packets_activity_from_stats(h)
         return jsonify({
-            "timestamps": [r["bucket"] for r in rows],
-            "tx_direct": [r["tx_direct"] for r in rows],
-            "tx_flood": [r["tx_flood"] for r in rows],
-            "rx_direct": [r["rx_direct"] for r in rows],
-            "rx_flood": [r["rx_flood"] for r in rows],
+            "timestamps":  [r["bucket"] for r in rows],
+            "tx_direct":   [r["tx_direct"] for r in rows],
+            "tx_flood":    [r["tx_flood"] for r in rows],
+            "rx_direct":   [r["rx_direct"] for r in rows],
+            "rx_flood":    [r["rx_flood"] for r in rows],
             "dups_direct": [0] * len(rows),
-            "dups_flood": [0] * len(rows),
-            "rx_errors": [r["rx_errors"] for r in rows],
-            "total": [r["total"] for r in rows],
+            "dups_flood":  [0] * len(rows),
+            "rx_errors":   [r["rx_errors"] for r in rows],
+            "total":       [r["total"] for r in rows],
         })
 
     dups = models.query_packet_dups(h)
-    dup_by_ts = {}
-    for d in dups:
-        dup_by_ts[d["ts"]] = d
-    dup_timestamps = sorted(dup_by_ts.keys())
-    def find_dups(bucket_ts):
-        dd = 0
-        fd = 0
-        re = 0
-        for dts in dup_timestamps:
-            if dts <= bucket_ts:
-                dd = dup_by_ts[dts]["dups_direct"]
-                fd = dup_by_ts[dts]["dups_flood"]
-                re = dup_by_ts[dts]["rx_errors"]
-            else:
-                break
-        return dd, fd, re
+    dup_timestamps = sorted(d["ts"] for d in dups)
+    dup_by_ts = {d["ts"]: d for d in dups}
+
+    # Build bucket boundaries and assign dup/error deltas to the correct bucket.
+    bucket_secs = bucket * 60
     dups_direct_list = []
     dups_flood_list = []
     rx_errors_list = []
+    prev_bucket_ts = rows[0]["bucket"] - bucket_secs if rows else 0
     for r in rows:
-        dd, fd, re = find_dups(r["bucket"])
+        curr_bucket_ts = r["bucket"]
+        dd = fd = re = 0
+        for dts in dup_timestamps:
+            if prev_bucket_ts < dts <= curr_bucket_ts:
+                dd += dup_by_ts[dts]["dups_direct"]
+                fd += dup_by_ts[dts]["dups_flood"]
+                re += dup_by_ts[dts]["rx_errors"]
         dups_direct_list.append(dd)
         dups_flood_list.append(fd)
         rx_errors_list.append(re)
+        prev_bucket_ts = curr_bucket_ts
+
+    # Include any trailing errors beyond the last closed bucket boundary.
+    last_bucket_ts = rows[-1]["bucket"] if rows else 0
+    trailing_errors = sum(
+        dup_by_ts[dts]["rx_errors"]
+        for dts in dup_timestamps
+        if dts > last_bucket_ts
+    )
+    if trailing_errors and rx_errors_list:
+        rx_errors_list[-1] += trailing_errors
+
     return jsonify({
-        "timestamps": [r["bucket"] for r in rows],
-        "tx_direct": [r["tx_direct"] for r in rows],
-        "tx_flood": [r["tx_flood"] for r in rows],
-        "rx_direct": [r["rx_direct"] for r in rows],
-        "rx_flood": [r["rx_flood"] for r in rows],
+        "timestamps":  [r["bucket"] for r in rows],
+        "tx_direct":   [r["tx_direct"] for r in rows],
+        "tx_flood":    [r["tx_flood"] for r in rows],
+        "rx_direct":   [r["rx_direct"] for r in rows],
+        "rx_flood":    [r["rx_flood"] for r in rows],
         "dups_direct": dups_direct_list,
-        "dups_flood": dups_flood_list,
-        "rx_errors": rx_errors_list,
-        "total": [r["total"] for r in rows],
+        "dups_flood":  dups_flood_list,
+        "rx_errors":   rx_errors_list,
+        "total":       [r["total"] for r in rows],
     })
 
 
@@ -217,32 +224,30 @@ def status():
 def stats_pi_health():
     rows = models.query_stats_pi_health(_hours())
     return jsonify({
-        "timestamps":     [r["ts"] for r in rows],
-        "cpu_percent":    [r["cpu_percent"] for r in rows],
-        "load_1":         [r["load_1"] for r in rows],
-        "load_5":         [r["load_5"] for r in rows],
-        "load_15":        [r["load_15"] for r in rows],
-        "mem_used_mb":    [r["mem_used_mb"] for r in rows],
-        "mem_total_mb":   [r["mem_total_mb"] for r in rows],
-        "mem_percent":    [r["mem_percent"] for r in rows],
-        "swap_used_mb":   [r["swap_used_mb"] for r in rows],
-        "swap_total_mb":  [r["swap_total_mb"] for r in rows],
-        "cpu_temp":       [r["cpu_temp"] for r in rows],
-        "disk_used_gb":   [r["disk_used_gb"] for r in rows],
-        "disk_total_gb":  [r["disk_total_gb"] for r in rows],
-        "disk_percent":   [r["disk_percent"] for r in rows],
-        "uptime_secs":    [r["uptime_secs"] for r in rows],
-        "process_count":  [r["process_count"] for r in rows],
+        "timestamps":    [r["ts"] for r in rows],
+        "cpu_percent":   [r["cpu_percent"] for r in rows],
+        "load_1":        [r["load_1"] for r in rows],
+        "load_5":        [r["load_5"] for r in rows],
+        "load_15":       [r["load_15"] for r in rows],
+        "mem_used_mb":   [r["mem_used_mb"] for r in rows],
+        "mem_total_mb":  [r["mem_total_mb"] for r in rows],
+        "mem_percent":   [r["mem_percent"] for r in rows],
+        "swap_used_mb":  [r["swap_used_mb"] for r in rows],
+        "swap_total_mb": [r["swap_total_mb"] for r in rows],
+        "cpu_temp":      [r["cpu_temp"] for r in rows],
+        "disk_used_gb":  [r["disk_used_gb"] for r in rows],
+        "disk_total_gb": [r["disk_total_gb"] for r in rows],
+        "disk_percent":  [r["disk_percent"] for r in rows],
+        "uptime_secs":   [r["uptime_secs"] for r in rows],
+        "process_count": [r["process_count"] for r in rows],
     })
 
 
 @api.route("/stats/pi/disk-io")
 def stats_pi_disk_io():
     devices = models.query_disk_io(_hours())
-    # Only use per-device data if at least one device has computed deltas
     if any(d["timestamps"] for d in devices.values()):
         return jsonify({"devices": devices})
-    # Fallback to aggregate data from pi_health table
     rows = models.query_pi_disk_io(_hours())
     return jsonify({
         "devices": {
@@ -291,7 +296,6 @@ def stats_pi_snapshot():
     uptime = int(time.time() - psutil.boot_time())
     proc_count = len(psutil.pids())
 
-    # Top 10 processes by memory
     top_procs = []
     for p in psutil.process_iter(["pid", "name", "cpu_percent", "memory_percent"]):
         try:
@@ -382,7 +386,6 @@ def put_settings():
 
 @api.route("/firmware/flash", methods=["POST"])
 def firmware_flash():
-    # Check if a flash is already in progress
     current = firmware_flasher.get_status()
     if current["state"] == "flashing":
         return jsonify({"error": "Flash already in progress"}), 409
@@ -398,19 +401,16 @@ def firmware_flash():
     if not fw_file.filename or not fw_file.filename.endswith(".zip"):
         return jsonify({"error": "Firmware file must be a .zip"}), 400
 
-    # Save uploaded file
     upload_dir = config.FIRMWARE_UPLOAD_DIR
     os.makedirs(upload_dir, exist_ok=True)
     filename = secure_filename(fw_file.filename)
     fw_path = os.path.join(upload_dir, filename)
     fw_file.save(fw_path)
 
-    # Verify hash before starting flash
     if not firmware_flasher.verify_sha256(fw_path, expected_hash):
         os.remove(fw_path)
         return jsonify({"error": "SHA256 hash mismatch"}), 400
 
-    # Kick off flash in background thread
     poller = current_app.config.get("poller")
     firmware_flasher.flash_firmware(fw_path, expected_hash, poller)
 
@@ -442,7 +442,6 @@ def _get_service_info(name):
         if active:
             mono_us = int(props.get("ActiveEnterTimestampMonotonic", "0"))
             if mono_us > 0:
-                # Read system monotonic clock to compute uptime
                 now_mono = time.clock_gettime(time.CLOCK_MONOTONIC)
                 uptime_secs = max(0, int(now_mono - mono_us / 1_000_000))
         return {"name": name, "active": active, "uptime_secs": uptime_secs}
@@ -489,7 +488,6 @@ def restart_service(name):
     def do_restart():
         subprocess.run(["systemctl", "restart", name], timeout=30)
 
-    # Delay so the HTTP response sends before we potentially kill ourselves
     threading.Timer(1.0, do_restart).start()
     return jsonify({"status": "ok"})
 
@@ -503,7 +501,7 @@ def system_reboot():
     return jsonify({"status": "rebooting"})
 
 
-# ── Sensor Endpoints ──────────────────────────────────
+# ── Sensor Stats Endpoints ────────────────────────────────
 
 @api.route("/stats/sensors/power")
 def stats_sensor_power():
@@ -553,6 +551,83 @@ def bq24074_charging():
     return jsonify({"status": "ok", "enabled": enabled})
 
 
+# ── Sensor Config (enable/disable via .env) ───────────────
+
+@api.route("/sensors/config", methods=["GET"])
+def sensors_config_get():
+    """Return enabled/disabled state of each sensor from .env"""
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    keys = {
+        "ina3221":  "MESHCORE_SENSOR_INA3221",
+        "bme280":   "MESHCORE_SENSOR_BME280",
+        "lis2dw12": "MESHCORE_SENSOR_LIS2DW12",
+        "as3935":   "MESHCORE_SENSOR_AS3935",
+        "bq24074":  "MESHCORE_SENSOR_BQ24074",
+    }
+    env_vals = {}
+    if os.path.exists(env_path):
+        for line in open(env_path):
+            s = line.strip()
+            if "=" in s and not s.startswith("#"):
+                k, _, v = s.partition("=")
+                env_vals[k.strip()] = v.strip()
+    cfg = {}
+    for name, key in keys.items():
+        cfg[name] = env_vals.get(key, os.environ.get(key, "0")) == "1"
+    poll = env_vals.get("MESHCORE_SENSOR_POLL",
+                        os.environ.get("MESHCORE_SENSOR_POLL", "0")) == "1"
+    return jsonify({"sensors": cfg, "polling_enabled": poll})
+
+
+@api.route("/sensors/config", methods=["POST"])
+def sensors_config_post():
+    """Write sensor toggles to .env, auto-update MESHCORE_SENSOR_POLL"""
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    keys = {
+        "ina3221":  "MESHCORE_SENSOR_INA3221",
+        "bme280":   "MESHCORE_SENSOR_BME280",
+        "lis2dw12": "MESHCORE_SENSOR_LIS2DW12",
+        "as3935":   "MESHCORE_SENSOR_AS3935",
+        "bq24074":  "MESHCORE_SENSOR_BQ24074",
+    }
+    if not os.path.exists(env_path):
+        return jsonify({"error": ".env not found"}), 500
+    data = request.get_json(force=True, silent=True) or {}
+    sensors = data.get("sensors", {})
+    for name in sensors:
+        if name not in keys:
+            return jsonify({"error": f"Unknown sensor: {name}"}), 400
+    lines = open(env_path).readlines()
+
+    def upsert(lines, key, value):
+        found = False
+        out = []
+        for l in lines:
+            if l.startswith(key + "="):
+                out.append(f"{key}={value}\n")
+                found = True
+            else:
+                out.append(l)
+        if not found:
+            out.append(f"{key}={value}\n")
+        return out
+
+    for name, key in keys.items():
+        if name in sensors:
+            lines = upsert(lines, key, "1" if sensors[name] else "0")
+
+    env_vals = {}
+    for l in lines:
+        s = l.strip()
+        if "=" in s and not s.startswith("#"):
+            k, _, v = s.partition("=")
+            env_vals[k.strip()] = v.strip()
+    any_enabled = any(env_vals.get(v, "0") == "1" for v in keys.values())
+    lines = upsert(lines, "MESHCORE_SENSOR_POLL", "1" if any_enabled else "0")
+    open(env_path, "w").writelines(lines)
+    return jsonify({"ok": True, "polling_enabled": any_enabled, "restart_required": True})
+
+
 @api.route("/sensors/status")
 def sensors_status():
     sp = current_app.config.get("sensor_poller")
@@ -560,6 +635,8 @@ def sensors_status():
         return jsonify(sp.status)
     return jsonify({"running": False, "sensors": {}})
 
+
+# ── Radio / GPIO ──────────────────────────────────────────
 
 @api.route("/radio/reset", methods=["POST"])
 def radio_reset():
@@ -570,7 +647,7 @@ def radio_reset():
             if poller:
                 poller.stop()
             radio_gpio.reset_radio()
-            time.sleep(2)  # wait for radio to boot
+            time.sleep(2)
         finally:
             if poller:
                 poller.start()
@@ -593,7 +670,6 @@ def radio_bootloader():
 
 
 def _list_serial_by_id():
-    """Return the set of symlink names in /dev/serial/by-id/."""
     by_id = "/dev/serial/by-id"
     if not os.path.isdir(by_id):
         return set()
@@ -601,7 +677,6 @@ def _list_serial_by_id():
 
 
 def _device_info(name):
-    """Return dict with symlink name and resolved path."""
     path = os.path.realpath(os.path.join("/dev/serial/by-id", name))
     return {"name": name, "path": path}
 
@@ -623,6 +698,14 @@ def database_reset():
     tables = list(retention.TABLES_WITH_TS) + ["neighbors", "device_info"]
     for table in tables:
         conn.execute(f"DELETE FROM {table}")
+    conn.commit()
+    return jsonify({"status": "ok"})
+
+
+@api.route("/neighbors/delete", methods=["POST"])
+def neighbors_delete():
+    conn = models._conn()
+    conn.execute("DELETE FROM neighbors")
     conn.commit()
     return jsonify({"status": "ok"})
 
@@ -659,7 +742,6 @@ def radio_usb_toggle():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    # Wait for USB enumeration and detect new device
     device = None
     if enable:
         for _ in range(6):

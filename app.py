@@ -1,11 +1,10 @@
+import bcrypt as _bc, secrets as _secrets
 import logging
 import os
 import signal
 import sys
-
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from flask_sock import Sock
-
 import config
 from database.schema import init_db
 from database import models
@@ -19,6 +18,19 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Methods that require authentication even on public installs
+_WRITE_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
+
+
+def _auth_enabled():
+    return bool(
+        os.environ.get("MESHCORE_PASSWORD_HASH") or os.environ.get("MESHCORE_PASSWORD")
+    )
+
+
+def _is_authenticated():
+    return session.get("authenticated", False)
 
 
 def create_app() -> Flask:
@@ -36,16 +48,18 @@ def create_app() -> Flask:
     sock = Sock(app)
     register_terminal_routes(sock)
 
-    # Authentication
     @app.before_request
     def require_auth():
-        if config.PASSWORD is None:
+        # Always allow static files and login/logout
+        if request.endpoint in ("login", "logout", "static", "auth_nonce"):
             return None
 
-        # Allow login page and static files without auth
-        if request.endpoint in ("login", "static"):
+        # If auth is not configured, everything is public
+        if not _auth_enabled():
             return None
 
+        # GET requests to the dashboard and read-only API are always public
+        if request.method == "GET":
         # Allow the dashboard page without auth (public read-only)
         if request.endpoint == "index" and request.method == "GET":
             return None
@@ -58,17 +72,34 @@ def create_app() -> Flask:
         if session.get("authenticated"):
             return None
 
-        # API / WebSocket paths get 401; browser pages get redirected
-        if request.path.startswith("/api/") or request.path.startswith("/ws/"):
-            return jsonify({"error": "Authentication required"}), 401
+        # WebSocket connections require authentication
+        if request.path.startswith("/ws/"):
+            if not _is_authenticated():
+                return jsonify({"error": "Authentication required"}), 401
+            return None
 
-        return redirect(url_for("login"))
+        # POST/PUT/DELETE/PATCH on API require authentication
+        if request.path.startswith("/api/") and request.method in _WRITE_METHODS:
+            if not _is_authenticated():
+                return jsonify({"error": "Authentication required"}), 401
+            return None
+
+        return None
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
         error = None
         if request.method == "POST":
-            if request.form.get("password") == config.PASSWORD:
+            submitted = request.form.get("password", "")
+            pw_hash   = os.environ.get("MESHCORE_PASSWORD_HASH", "")
+            pw_plain  = os.environ.get("MESHCORE_PASSWORD", "")
+            if pw_hash:
+                ok = _bc.checkpw(submitted.encode(), pw_hash.encode())
+            elif pw_plain:
+                ok = _secrets.compare_digest(submitted, pw_plain)
+            else:
+                ok = False
+            if ok:
                 session["authenticated"] = True
                 return redirect(url_for("index", tab="admin"))
             error = "Invalid password"
@@ -79,9 +110,14 @@ def create_app() -> Flask:
         session.clear()
         return redirect(url_for("index"))
 
-    # Root route serves dashboard
+    # Root route serves dashboard — always accessible
     @app.route("/")
     def index():
+        return render_template(
+            "index.html",
+            auth_enabled=_auth_enabled(),
+            is_authenticated=_is_authenticated(),
+        )
         is_admin = not config.PASSWORD or session.get("authenticated", False)
         return render_template("index.html", auth_enabled=bool(config.PASSWORD), is_admin=is_admin)
 

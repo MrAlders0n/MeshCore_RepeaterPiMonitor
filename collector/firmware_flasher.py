@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 
@@ -14,6 +15,13 @@ from collector import radio_gpio
 from database import models
 
 logger = logging.getLogger(__name__)
+
+# Resolve adafruit-nrfutil relative to this venv so it works regardless of
+# install path. Falls back to PATH if not found in the venv.
+_VENV_BIN = os.path.join(os.path.dirname(sys.executable))
+_NRFUTIL = os.path.join(_VENV_BIN, "adafruit-nrfutil")
+if not os.path.isfile(_NRFUTIL):
+    _NRFUTIL = "adafruit-nrfutil"
 
 # Thread-safe flash state
 _lock = threading.Lock()
@@ -157,25 +165,33 @@ def _flash_worker(fw_path: str, expected_hash: str, poller) -> None:
     else:
         _append_log("Warning: no new USB device detected after enabling relay.")
 
-    # Wait for the DFU serial port to re-appear after USB re-enumeration
-    port = models.get_setting("flash_serial_port", config.FLASH_SERIAL_PORT)
-    _set_state("flashing", "Waiting for DFU port...")
-    _append_log(f"Waiting for {port} to appear...")
-    dfu_port = _wait_for_port(port, timeout=15)
-    if not dfu_port:
-        _append_log(f"ERROR: {port} did not appear within 15 seconds.")
-        _set_state("error", "DFU port not found")
-        _restart_services(poller)
-        _cleanup(fw_path)
-        _append_log("Done.")
-        return
-    _append_log(f"DFU port ready: {dfu_port}")
+    # Use the detected bootloader device as the DFU port.
+    # In bootloader mode the XIAO enumerates under a different USB name
+    # (Seeed_XIAO_nRF52840_Sense) than the MeshCore firmware port
+    # (Seeed_Studio_XIAO_nRF52840), so we prefer the newly detected device.
+    if detected:
+        dfu_port = f"/dev/serial/by-id/{detected}"
+        _append_log(f"DFU port ready: {dfu_port}")
+    else:
+        # Fall back to configured flash port
+        port = models.get_setting("flash_serial_port", config.FLASH_SERIAL_PORT)
+        _set_state("flashing", "Waiting for DFU port...")
+        _append_log(f"Waiting for {port} to appear...")
+        dfu_port = _wait_for_port(port, timeout=15)
+        if not dfu_port:
+            _append_log(f"ERROR: {port} did not appear within 15 seconds.")
+            _set_state("error", "DFU port not found")
+            _restart_services(poller)
+            _cleanup(fw_path)
+            _append_log("Done.")
+            return
+        _append_log(f"DFU port ready: {dfu_port}")
 
     # Run adafruit-nrfutil (no --touch since we entered bootloader via GPIO)
     _set_state("flashing", "Flashing firmware...")
     _append_log(f"Flashing firmware on {dfu_port}...")
     cmd = [
-        "adafruit-nrfutil", "--verbose", "dfu", "serial",
+        _NRFUTIL, "--verbose", "dfu", "serial",
         "--package", fw_path,
         "-p", dfu_port,
         "-b", "115200",
@@ -217,7 +233,8 @@ def _flash_worker(fw_path: str, expected_hash: str, poller) -> None:
         _set_state("error", "Timeout")
         flash_failed = True
     except FileNotFoundError:
-        _append_log("ERROR: adafruit-nrfutil not found. Is it installed?")
+        _append_log(f"ERROR: adafruit-nrfutil not found at {_NRFUTIL}. Is it installed?")
+        _append_log("Run: pip install adafruit-nrfutil")
         _set_state("error", "adafruit-nrfutil not found")
         flash_failed = True
     except Exception as e:
