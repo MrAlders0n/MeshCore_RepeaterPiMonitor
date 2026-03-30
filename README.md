@@ -47,35 +47,6 @@ Dashboard available at `http://<pi-ip>:5000`
 
 ---
 
-## Applying to an Existing Install
-
-Copy modified files individually, then restart:
-
-```bash
-sudo cp app.py                                  /opt/RepeaterWatch/app.py
-sudo cp setup_auth.py                           /opt/RepeaterWatch/setup_auth.py
-sudo cp api/routes.py                           /opt/RepeaterWatch/api/routes.py
-sudo cp collector/firmware_flasher.py           /opt/RepeaterWatch/collector/firmware_flasher.py
-sudo cp templates/index.html                    /opt/RepeaterWatch/templates/index.html
-sudo cp static/css/dashboard.css               /opt/RepeaterWatch/static/css/dashboard.css
-sudo cp static/js/dashboard.js                 /opt/RepeaterWatch/static/js/dashboard.js
-sudo cp static/js/sensors_manage.js            /opt/RepeaterWatch/static/js/sensors_manage.js
-
-sudo chown -R meshcoremon:meshcoremon \
-    /opt/RepeaterWatch/app.py \
-    /opt/RepeaterWatch/api/routes.py \
-    /opt/RepeaterWatch/setup_auth.py \
-    /opt/RepeaterWatch/collector/firmware_flasher.py \
-    /opt/RepeaterWatch/static/css/dashboard.css \
-    /opt/RepeaterWatch/static/js/dashboard.js \
-    /opt/RepeaterWatch/static/js/sensors_manage.js \
-    /opt/RepeaterWatch/templates/index.html
-
-sudo /opt/RepeaterWatch/venv/bin/pip install bcrypt adafruit-nrfutil
-sudo systemctl restart RepeaterWatch
-```
-
----
 
 ## Serial Port Architecture
 
