@@ -24,7 +24,7 @@ Enhancements to [RepeaterWatch](https://github.com/MrAlders0n/RepeaterWatch) dev
 ## Quick Install (fresh Pi)
 
 ```bash
-git clone https://github.com/jjkroell/Repeater-Watch.git
+git clone https://github.com/jjkroell/RepeaterWatch.git
 cd Repeater-Watch
 chmod +x install.sh
 sudo ./install.sh
