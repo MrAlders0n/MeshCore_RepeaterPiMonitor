@@ -25,7 +25,7 @@ Enhancements to [RepeaterWatch](https://github.com/MrAlders0n/RepeaterWatch) dev
 
 ```bash
 git clone https://github.com/jjkroell/RepeaterWatch.git
-cd Repeater-Watch
+cd RepeaterWatch
 chmod +x install.sh
 sudo ./install.sh
 ```
