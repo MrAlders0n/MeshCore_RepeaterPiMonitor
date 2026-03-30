@@ -1197,6 +1197,73 @@ footer strong { color: var(--text); }
     justify-content: center;
     z-index: 10000;
     padding: var(--pad-sm);
+/* Header Actions */
+.header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Admin Button */
+.admin-btn {
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 4px 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.admin-btn:hover {
+    color: #fff;
+    border-color: rgba(255,255,255,0.4);
+}
+
+.admin-btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* Logout Button */
+.logout-btn {
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 4px 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.logout-btn:hover {
+    color: #fff;
+    border-color: rgba(255,255,255,0.4);
+}
+
+/* Admin Section Title */
+.admin-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 20px 20px 0;
+    margin: 0;
+}
+
+/* Terminal Card */
+.tool-card-wide {
+    grid-column: span 2;
+}
+
+.tool-card-terminal {
+    grid-column: 1 / -1;
 }
 
 .fw-modal {

@@ -40,6 +40,16 @@ var RadioChart = (function () {
             snr.push([t, data.last_snr[i]]);
         }
         chart.setOption({ series: [{ data: nf }, { data: rssi }, { data: snr }] });
+        // Compute 5-minute rolling average for noise floor
+        var nfAvg = [];
+        for (var i = 0; i < nf.length; i++) {
+            var sum = 0, count = 0;
+            for (var j = i; j >= 0 && nf[i][0] - nf[j][0] <= WINDOW; j--) {
+                if (nf[j][1] != null) { sum += nf[j][1]; count++; }
+            }
+            nfAvg.push([nf[i][0], count > 0 ? Math.round(sum / count) : null]);
+        }
+        chart.setOption({ series: [{ data: nf }, { data: nfAvg }, { data: rssi }, { data: snr }] });
     }
     return { init: init, update: update, resize: function () { if (chart) chart.resize(); } };
 })();

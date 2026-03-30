@@ -32,6 +32,14 @@
         {% else %}
         <a href="/login" class="logout-btn">Login</a>
         {% endif %}
+        <div class="header-actions">
+            {% if is_admin %}
+            <button id="admin-btn" class="admin-btn">Admin</button>
+            <a href="/logout" class="logout-btn">Logout</a>
+            {% else %}
+            <a href="/login" class="admin-btn">Admin</a>
+            {% endif %}
+        </div>
         {% endif %}
     </header>
 
@@ -43,6 +51,8 @@
         {% if not auth_enabled or is_authenticated %}
         <button class="tab-btn" data-tab="tools">Tools</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
+        {% if not auth_enabled %}
+        <button class="tab-btn" data-tab="admin">Admin</button>
         {% endif %}
     </nav>
 
@@ -627,6 +637,10 @@
         </div>
         {% else %}
 
+    {% if is_admin %}
+    <!-- Tab: Admin (Tools + Settings) -->
+    <div id="tab-admin" class="tab-panel">
+        <h2 class="admin-section-title">Tools</h2>
         <div class="tools-grid">
 
             <!-- Flash Firmware -->
@@ -788,6 +802,9 @@
         </div>
         {% else %}
 
+        </div>
+
+        <h2 class="admin-section-title">Settings</h2>
         <div class="settings-grid">
 
             <div class="tool-card settings-card">
@@ -846,6 +863,23 @@
             <div class="tool-card settings-card">
                 <div class="tool-card-header">
                     <span class="tool-icon">&#x1F5D1;</span>
+                    <h3>Neighbours</h3>
+                </div>
+                <p class="tool-desc">Delete neighbours not heard from in the specified number of hours.</p>
+                <div class="settings-group">
+                    <div class="settings-row">
+                        <label for="neighbor-age-hours">Older than (hours)</label>
+                        <input type="number" id="neighbor-age-hours" class="settings-input" min="1" step="1" value="24" style="width:100px" />
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button id="neighbor-purge-btn" class="danger-btn">Delete Old Neighbours</button>
+                    <span id="neighbor-purge-status" class="settings-save-status"></span>
+                </div>
+            </div>
+            <div class="tool-card settings-card">
+                <div class="tool-card-header">
+                    <span class="tool-icon">&#x1F5D1;</span>
                     <h3>Database</h3>
                 </div>
                 <p class="tool-desc">Delete all collected data and start fresh. Settings are preserved.</p>
@@ -860,6 +894,9 @@
         {% endif %}<!-- /auth gate -->
 
     </div><!-- /tab-settings -->
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Footer -->
     <footer id="footer">

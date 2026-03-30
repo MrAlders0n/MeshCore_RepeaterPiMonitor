@@ -60,6 +60,16 @@ def create_app() -> Flask:
 
         # GET requests to the dashboard and read-only API are always public
         if request.method == "GET":
+        # Allow the dashboard page without auth (public read-only)
+        if request.endpoint == "index" and request.method == "GET":
+            return None
+
+        # Allow read-only GET API requests without auth
+        if request.path.startswith("/api/") and request.method == "GET":
+            return None
+
+        # All other requests (POST/PUT/DELETE, WebSocket) require auth
+        if session.get("authenticated"):
             return None
 
         # WebSocket connections require authentication
@@ -91,7 +101,7 @@ def create_app() -> Flask:
                 ok = False
             if ok:
                 session["authenticated"] = True
-                return redirect(url_for("index"))
+                return redirect(url_for("index", tab="admin"))
             error = "Invalid password"
         return render_template("login.html", error=error)
 
@@ -108,6 +118,8 @@ def create_app() -> Flask:
             auth_enabled=_auth_enabled(),
             is_authenticated=_is_authenticated(),
         )
+        is_admin = not config.PASSWORD or session.get("authenticated", False)
+        return render_template("index.html", auth_enabled=bool(config.PASSWORD), is_admin=is_admin)
 
     # Start collector
     poller = StatsPoller()

@@ -681,6 +681,16 @@ def _device_info(name):
     return {"name": name, "path": path}
 
 
+@api.route("/neighbors/purge", methods=["POST"])
+def neighbors_purge():
+    data = request.get_json(force=True)
+    hours = data.get("hours")
+    if not isinstance(hours, (int, float)) or hours <= 0:
+        return jsonify({"error": "hours must be a positive number"}), 400
+    count = models.delete_old_neighbors(int(hours))
+    return jsonify({"status": "ok", "deleted": count})
+
+
 @api.route("/database/reset", methods=["POST"])
 def database_reset():
     from database import retention

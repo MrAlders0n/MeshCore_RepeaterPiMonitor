@@ -151,6 +151,20 @@ def insert_neighbor_sighting(ts: int, pubkey_prefix: str,
     _conn().commit()
 
 
+def delete_old_neighbors(max_age_hours: int) -> int:
+    """Delete neighbors not seen in the last *max_age_hours* hours."""
+    cutoff = int(time.time()) - max_age_hours * 3600
+    conn = _conn()
+    conn.execute(
+        "DELETE FROM neighbor_sightings WHERE pubkey_prefix IN "
+        "(SELECT pubkey_prefix FROM neighbors WHERE last_seen < ?)",
+        (cutoff,),
+    )
+    cur = conn.execute("DELETE FROM neighbors WHERE last_seen < ?", (cutoff,))
+    conn.commit()
+    return cur.rowcount
+
+
 # ── Queries ──────────────────────────────────────────────────
 
 def _clamp_hours(hours: int) -> int:
